@@ -1,36 +1,43 @@
+# Deploy on a cheap VPS
+#
+# 1. Copy app/api/.env.example → app/api/.env and fill secrets
+# 2. Set CLIENT_ORIGIN to the public UI origin
+# 3. Build web with the public API URL:
+#    VITE_API_BASE_URL=https://api.example.com docker compose up --build -d
+#
+# Secrets never go in the web image — only VITE_API_BASE_URL (public).
+
 services:
-  postgres:
-    image: postgres:16-alpine
-    container_name: erazmus-postgres
-    restart: unless-stopped
+  api:
+    build: ./app/api
     ports:
-      - "5433:5432"
+      - '4000:4000'
+    env_file:
+      - ./app/api/.env
     environment:
-      POSTGRES_USER: erazmus
-      POSTGRES_PASSWORD: erazmus_dev
-      POSTGRES_DB: erazmus_ai
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
+      NODE_ENV: production
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U erazmus -d erazmus_ai"]
-      interval: 5s
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:4000/api/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 15s
       timeout: 5s
       retries: 5
-
-  redis:
-    image: redis:7-alpine
-    container_name: erazmus-redis
+      start_period: 15s
     restart: unless-stopped
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
 
-volumes:
-  postgres_data:
-  redis_data:
+  web:
+    build:
+      context: ./app/web
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:4000}
+    ports:
+      - '8080:80'
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped

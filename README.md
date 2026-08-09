@@ -1,76 +1,65 @@
 # Erasmus AI Assistant
 
-AI-powered SaaS platform for designing, auditing, and finalizing Erasmus+ grant applications.
+AI assistant for NGOs and youth organisations writing Erasmus+ grant applications.
+
+## Layout
+
+```
+app/
+  api/     Express API (auth, chat SSE, uploads, documents)
+  web/     React + Vite + Tailwind UI
+docs/      Deploy and stack notes
+docker-compose.yml
+```
 
 ## Stack
 
-- **Frontend/API:** Next.js 16, React 19, Tailwind CSS 4, TypeScript
-- **Database:** PostgreSQL (Prisma ORM)
-- **Auth:** Auth.js v5 (email + Google OAuth)
-- **AI:** Moonshot API (provider-abstracted for easy swapping)
-- **Jobs:** BullMQ + Redis (Railway worker in production)
-- **Billing:** Stripe
-- **Hosting:** Vercel (web) + Railway (worker) + Supabase (DB/storage) + Upstash (Redis)
+- **Web:** React + Vite + Tailwind — [`app/web`](app/web)
+- **API:** Express — [`app/api`](app/api)
+- **Data / Auth / Storage:** Supabase
+- **AI:** Moonshot (server-side only)
+- **Deploy:** Docker Compose on a single VPS
 
-See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for full production hosting architecture.
-
-## Local Development
-
-### Prerequisites
-
-- Node.js 20+
-- Docker (for Postgres + Redis)
-
-### Setup
+## Quick start (local)
 
 ```bash
-# Clone and install
-npm install
+cp app/api/.env.example app/api/.env
+# Fill SUPABASE_* and MOONSHOT_API_KEY
+# Run SQL in app/api/migrations/*.sql in the Supabase SQL editor (in order)
 
-# Start local database services
-npm run docker:up
-
-# Configure environment
-cp .env.example .env
-# Edit .env with your keys
-
-# Run database migrations
-npm run db:migrate
-
-# Start dev server
-npm run dev
+cd app/api && npm install && npm run dev    # http://localhost:4000
+cd app/web && npm install && npm run dev    # Vite UI
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
-
-### Background Worker (optional locally)
+Or with Docker:
 
 ```bash
-npm run worker:dev
+cp app/api/.env.example app/api/.env   # set CLIENT_ORIGIN=http://localhost:8080
+docker compose up --build
 ```
 
-## Project Structure
+- API: http://localhost:4000  
+- Web: http://localhost:8080  
 
-```
-src/
-├── app/           # Next.js App Router pages and API routes
-├── components/    # React components
-├── lib/           # Business logic (AI, auth, billing, tokens)
-├── workers/       # Background job processors
-└── types/         # TypeScript type extensions
-prisma/            # Database schema and migrations
-docs/              # Architecture and deployment docs
+## Tests
+
+```bash
+cd app/api && npm test
+cd app/web && npx vitest run
 ```
 
-## Development Phases
+## Production
 
-- [x] Phase 0: Foundation (scaffold, DB schema, theme, auth skeleton)
-- [ ] Phase 1: Dashboard, token ledger, AI chat streaming
-- [ ] Phase 2: Grant wizard, 4 AI agents, plan gating
-- [ ] Phase 3: Document export, Stripe billing
-- [ ] Phase 4: Admin panel, polish, E2E tests
-- [ ] Phase 5: Production deployment
+See [docs/DEPLOY.md](docs/DEPLOY.md).
 
-## License
+## Features
 
-MIT
+- Auth (Supabase), 4 specialized agents, streaming chat, attachments, token quotas
+- Chat-based application draft → Markdown + DOCX download
+- Rate limiting, helmet, CORS locked to `CLIENT_ORIGIN`
+
+## Known follow-ups
+
+- Stripe billing
+- Full Who/Where/When/What wizard UI
+- PDF export

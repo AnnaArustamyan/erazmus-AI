@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell($env:Path = \"C:\\\\Program Files\\\\nodejs;$env:Path\"; cd \"C:\\\\Users\\\\nicka\\\\Downloads\\\\erasmus-project\\\\erasmus-project\\\\erasmus-backend\"; node --check src/config/moonshot.js; node --check src/routes/chat.js; \"syntax OK\")"
+    ]
+  }
+}

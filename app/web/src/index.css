@@ -1,0 +1,74 @@
+@import "tailwindcss";
+
+:root,
+[data-theme="light"] {
+  --color-bg: #fdfbf7;
+  --color-panel: #f5f2eb;
+  --color-panel-2: #efebe1;
+  --color-text: #1c1917;
+  --color-text-dim: #6b655c;
+  --color-border: #e4dfd3;
+  --color-accent: #c08a2e;
+  --color-accent-soft: #eadcbb;
+  --color-bubble-user: #1c1917;
+  --color-bubble-user-text: #fdfbf7;
+  --color-danger: #b3452f;
+}
+
+[data-theme="dark"] {
+  --color-bg: #0a0e17;
+  --color-panel: #0f172a;
+  --color-panel-2: #131c31;
+  --color-text: #e6eaf2;
+  --color-text-dim: #7c8aa3;
+  --color-border: #1e293f;
+  --color-accent: #34d399;
+  --color-accent-soft: #10362b;
+  --color-bubble-user: #1b2740;
+  --color-bubble-user-text: #e6eaf2;
+  --color-danger: #f27e63;
+}
+
+@theme inline {
+  --color-app-bg: var(--color-bg);
+  --color-app-panel: var(--color-panel);
+  --color-app-panel-2: var(--color-panel-2);
+  --color-app-text: var(--color-text);
+  --color-app-text-dim: var(--color-text-dim);
+  --color-app-border: var(--color-border);
+  --color-app-accent: var(--color-accent);
+  --color-app-accent-soft: var(--color-accent-soft);
+  --color-app-bubble-user: var(--color-bubble-user);
+  --color-app-bubble-user-text: var(--color-bubble-user-text);
+  --color-app-danger: var(--color-danger);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family:
+    'Inter',
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    sans-serif;
+  background: var(--color-bg);
+  color: var(--color-text);
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
