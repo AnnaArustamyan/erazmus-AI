@@ -1,12 +1,15 @@
 import { Router } from 'express';
 import { verifyAuth } from '../middleware/auth.js';
-import { isMoonshotConfigured } from '../config/env.js';
-import { completeChat } from '../config/moonshot.js';
+import {
+  completeChatForPlan,
+  isProviderConfiguredForPlan,
+} from '../services/aiProvider.js';
 import { supabaseAdmin } from '../config/supabase.js';
 import {
   APPLICATION_DRAFT_SYSTEM_PROMPT,
   emptyApplicationMarkdown,
 } from '../lib/applicationSchema.js';
+import { getPlanConfig } from '../lib/plans.js';
 import {
   createDocumentRecord,
   createDocumentSignedUrl,
@@ -16,13 +19,23 @@ import {
 import { applyTokenUsage, getUserQuota, isQuotaExhausted } from '../services/quota.js';
 
 const router = Router();
-const MAX_HISTORY_MESSAGES = 40;
 
 /**
  * POST /api/documents
  * body: { title?, contentMd, conversationId? }
+ * Manual create still allowed for paid plans only (keeps free tier locked down).
  */
 router.post('/', verifyAuth, async (req, res) => {
+  const profile = await getUserQuota(req.user.id);
+  if (!profile) return res.status(404).json({ error: 'Profile not found' });
+
+  const planConfig = getPlanConfig(profile.plan);
+  if (!planConfig.canGenerateDocuments) {
+    return res.status(403).json({
+      error: 'Document generation is available on Basic and Pro plans. Upgrade to continue.',
+    });
+  }
+
   const { title, contentMd, conversationId } = req.body ?? {};
   if (typeof contentMd !== 'string' || !contentMd.trim()) {
     return res.status(400).json({ error: 'contentMd is required' });
@@ -70,14 +83,9 @@ router.get('/', verifyAuth, async (req, res) => {
 /**
  * POST /api/documents/from-conversation
  * body: { conversationId, title? }
+ * Paid plans only — uses Moonshot (advanced).
  */
 router.post('/from-conversation', verifyAuth, async (req, res) => {
-  if (!isMoonshotConfigured()) {
-    return res.status(503).json({
-      error: 'AI provider is not configured. Set MOONSHOT_API_KEY on the server.',
-    });
-  }
-
   const { conversationId, title } = req.body ?? {};
   if (!conversationId || typeof conversationId !== 'string') {
     return res.status(400).json({ error: 'conversationId is required' });
@@ -85,8 +93,20 @@ router.post('/from-conversation', verifyAuth, async (req, res) => {
 
   const profile = await getUserQuota(req.user.id);
   if (!profile) return res.status(404).json({ error: 'Profile not found' });
+
+  const planConfig = getPlanConfig(profile.plan);
+  if (!planConfig.canGenerateDocuments) {
+    return res.status(403).json({
+      error: 'Document generation is available on Basic and Pro plans. Upgrade to continue.',
+    });
+  }
   if (isQuotaExhausted(profile)) {
     return res.status(402).json({ error: 'Token quota exhausted. Upgrade your plan to continue.' });
+  }
+  if (!isProviderConfiguredForPlan(profile.plan)) {
+    return res.status(503).json({
+      error: 'AI provider is not configured for your plan. Set MOONSHOT_API_KEY on the server.',
+    });
   }
 
   const { data: conversation, error: conversationError } = await supabaseAdmin
@@ -105,7 +125,7 @@ router.post('/from-conversation', verifyAuth, async (req, res) => {
     .select('role, content, agent_id')
     .eq('conversation_id', conversation.id)
     .order('created_at', { ascending: true })
-    .limit(MAX_HISTORY_MESSAGES);
+    .limit(planConfig.maxHistoryMessages);
 
   if (historyError) {
     return res.status(500).json({ error: 'Could not load conversation history' });
@@ -121,7 +141,8 @@ router.post('/from-conversation', verifyAuth, async (req, res) => {
   let contentMd;
   let totalTokens = 0;
   try {
-    const result = await completeChat({
+    const result = await completeChatForPlan({
+      plan: profile.plan,
       messages: [
         { role: 'system', content: APPLICATION_DRAFT_SYSTEM_PROMPT },
         {
@@ -130,7 +151,9 @@ router.post('/from-conversation', verifyAuth, async (req, res) => {
         },
       ],
     });
-    contentMd = result.content?.trim() || emptyApplicationMarkdown(title || conversation.title || undefined);
+    contentMd =
+      result.content?.trim() ||
+      emptyApplicationMarkdown(title || conversation.title || undefined);
     totalTokens = result.totalTokens;
   } catch (err) {
     console.error('[documents] from-conversation AI failed', err);

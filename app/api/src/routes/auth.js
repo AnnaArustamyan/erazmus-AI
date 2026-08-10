@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { supabaseAdmin } from '../config/supabase.js';
 import { verifyAuth } from '../middleware/auth.js';
 import { authIpLimiter, loginAccountLimiter } from '../middleware/rateLimiters.js';
+import { PLANS, planFeatures } from '../lib/plans.js';
 
 const router = Router();
 
@@ -38,7 +39,7 @@ router.post('/register', authIpLimiter, async (req, res) => {
     email: data.user.email,
     name: name || null,
     plan: 'free',
-    monthly_token_limit: 100000,
+    monthly_token_limit: PLANS.free.monthlyTokenLimit,
     tokens_used: 0,
   });
 
@@ -130,7 +131,10 @@ router.get('/me', verifyAuth, async (req, res) => {
     .single();
 
   if (error) return res.status(404).json({ error: 'Profile not found' });
-  res.json(data);
+  res.json({
+    ...data,
+    features: planFeatures(data.plan),
+  });
 });
 
 export default router;

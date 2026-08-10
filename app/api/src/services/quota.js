@@ -2,12 +2,12 @@ import { supabaseAdmin } from '../config/supabase.js';
 
 /**
  * @param {string} userId
- * @returns {Promise<{ monthly_token_limit: number, tokens_used: number } | null>}
+ * @returns {Promise<{ plan: string, monthly_token_limit: number, tokens_used: number } | null>}
  */
 export async function getUserQuota(userId) {
   const { data, error } = await supabaseAdmin
     .from('users')
-    .select('monthly_token_limit, tokens_used')
+    .select('plan, monthly_token_limit, tokens_used')
     .eq('id', userId)
     .single();
 

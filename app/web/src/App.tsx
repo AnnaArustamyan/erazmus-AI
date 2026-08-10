@@ -199,16 +199,19 @@ function Workspace({
     <div data-theme={theme} className="flex h-screen flex-col bg-app-bg">
       <div className="flex shrink-0 items-center justify-between gap-3 border-b border-app-border bg-app-panel px-4 py-1.5">
         <div className="min-w-0 truncate text-xs text-app-text-dim">
-          {documents.length > 0
-            ? `${documents.length} saved application document${documents.length === 1 ? '' : 's'}`
-            : 'Chat with agents, then generate an application document'}
+          {profile?.features?.canGenerateDocuments
+            ? documents.length > 0
+              ? `${documents.length} saved application document${documents.length === 1 ? '' : 's'}`
+              : 'Chat with agents, then generate an application document'
+            : 'Free plan: Standard AI chat. Upgrade for Advanced AI + document export.'}
         </div>
         <ProfileMenu
           name={profile?.name ?? null}
           email={profile?.email ?? user?.email ?? ''}
           plan={profile?.plan ?? 'free'}
           tokensUsed={profile?.tokensUsed ?? 0}
-          tokenLimit={profile?.monthlyTokenLimit ?? 3_000_000}
+          tokenLimit={profile?.monthlyTokenLimit ?? 20_000}
+          aiTier={profile?.features?.aiTier ?? 'standard'}
           onSignOut={() => void logout()}
         />
       </div>
@@ -268,7 +271,9 @@ function Workspace({
               onSelectConversation={handleSelectConversation}
               onDeleteConversation={(id) => void handleDeleteConversation(id)}
               uploadFile={handleUploadFile}
-              onGenerateDocument={handleGenerateDocument}
+              onGenerateDocument={
+                profile?.features?.canGenerateDocuments ? handleGenerateDocument : undefined
+              }
               isGeneratingDocument={isGeneratingDocument}
               tokenBalance={
                 profile

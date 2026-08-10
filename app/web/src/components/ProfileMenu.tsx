@@ -7,6 +7,7 @@ export interface ProfileMenuProps {
   plan: string
   tokensUsed: number
   tokenLimit: number
+  aiTier?: 'standard' | 'advanced'
   onSignOut: () => void
 }
 
@@ -28,7 +29,15 @@ function capitalize(value: string): string {
   return value.length ? value[0].toUpperCase() + value.slice(1) : value
 }
 
-export function ProfileMenu({ name, email, plan, tokensUsed, tokenLimit, onSignOut }: ProfileMenuProps) {
+export function ProfileMenu({
+  name,
+  email,
+  plan,
+  tokensUsed,
+  tokenLimit,
+  aiTier = 'standard',
+  onSignOut,
+}: ProfileMenuProps) {
   const [isOpen, setIsOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const menuId = useId()
@@ -91,6 +100,9 @@ export function ProfileMenu({ name, email, plan, tokensUsed, tokenLimit, onSignO
           <div className="mb-2 rounded-lg bg-app-panel p-2.5">
             <div className="mb-1 flex items-center justify-between">
               <span className="text-xs font-bold text-app-text">{capitalize(plan)} plan</span>
+              <span className="text-[10px] font-medium uppercase tracking-wide text-app-text-dim">
+                {aiTier === 'advanced' ? 'Advanced AI' : 'Standard AI'}
+              </span>
             </div>
             <div className="mb-1.5 font-mono text-[10.5px] text-app-text-dim">
               {formatTokens(tokensUsed)} / {formatTokens(tokenLimit)} tokens

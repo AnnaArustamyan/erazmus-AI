@@ -16,13 +16,13 @@ function read(name) {
 
 /**
  * Validates required environment variables.
- * In production, missing critical vars throw so the process does not start half-configured.
- * In development/test, warn and continue so local tooling still works.
+ * Free plan needs OpenAI; paid plans need Moonshot — require both in production.
  */
 export function validateEnv() {
   const required = [
     'SUPABASE_URL',
     'SUPABASE_SERVICE_ROLE_KEY',
+    'OPENAI_API_KEY',
     'MOONSHOT_API_KEY',
   ];
 
@@ -34,7 +34,7 @@ export function validateEnv() {
   if (isProduction && !isTest) {
     throw new Error(message);
   }
-  console.warn(`${message}. Chat and document generation will fail until they are set.`);
+  console.warn(`${message}. Some AI features will fail until they are set.`);
 }
 
 export const env = {
@@ -43,6 +43,9 @@ export const env = {
   clientOrigin: read('CLIENT_ORIGIN') || 'http://localhost:5173',
   supabaseUrl: read('SUPABASE_URL') || '',
   supabaseServiceRoleKey: read('SUPABASE_SERVICE_ROLE_KEY') || '',
+  openaiApiKey: read('OPENAI_API_KEY') || '',
+  openaiBaseUrl: read('OPENAI_BASE_URL') || 'https://api.openai.com/v1',
+  openaiModel: read('OPENAI_MODEL') || 'gpt-5.6-luna',
   moonshotApiKey: read('MOONSHOT_API_KEY') || '',
   moonshotBaseUrl: read('MOONSHOT_BASE_URL') || 'https://api.moonshot.ai/v1',
   moonshotModel: read('MOONSHOT_MODEL') || 'moonshot-v1-8k',
@@ -51,6 +54,10 @@ export const env = {
 
 export function isMoonshotConfigured() {
   return Boolean(read('MOONSHOT_API_KEY') || env.moonshotApiKey);
+}
+
+export function isOpenAiConfigured() {
+  return Boolean(read('OPENAI_API_KEY') || env.openaiApiKey);
 }
 
 export function isSupabaseConfigured() {

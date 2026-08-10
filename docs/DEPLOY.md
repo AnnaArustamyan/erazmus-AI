@@ -1,6 +1,6 @@
 # Deploy on a cheap VPS
 
-Target shape: one VPS + Docker Compose + managed Supabase (Auth/DB/Storage) + Moonshot API.
+Target shape: one VPS + Docker Compose + managed Supabase (Auth/DB/Storage) + OpenAI (free) + Moonshot (paid).
 
 ## Why this layout
 
@@ -14,7 +14,8 @@ Target shape: one VPS + Docker Compose + managed Supabase (Auth/DB/Storage) + Mo
 - Docker + Docker Compose on the VPS
 - Domain pointed at the VPS (optional but recommended)
 - Supabase project (EU region preferred for Erasmus+)
-- Moonshot API key
+- OpenAI API key (free / Standard AI)
+- Moonshot API key (paid / Advanced AI)
 
 ## Steps
 
@@ -29,19 +30,20 @@ Required:
 
 - `SUPABASE_URL`
 - `SUPABASE_SERVICE_ROLE_KEY` (API only)
-- `MOONSHOT_API_KEY`
+- `OPENAI_API_KEY` (free plan chat)
+- `MOONSHOT_API_KEY` (paid chat + document generation)
 - `CLIENT_ORIGIN` — your public UI origin, e.g. `https://app.example.com`
 - `NODE_ENV=production`
 
 Optional:
 
-- `MOONSHOT_BASE_URL` (default `https://api.moonshot.ai/v1`)
-- `MOONSHOT_MODEL` (default `moonshot-v1-8k`)
+- `OPENAI_BASE_URL` / `OPENAI_MODEL` (default `gpt-5.6-luna` — cheapest GPT-5.6 tier)
+- `MOONSHOT_BASE_URL` / `MOONSHOT_MODEL` (default `moonshot-v1-8k`)
 - `PORT` (default `4000`)
 
 3. Run SQL migrations in order in the Supabase SQL Editor:
 
-- `app/api/migrations/001_users.sql` … `006_documents.sql`
+- `app/api/migrations/001_users.sql` … `007_free_tier_quota.sql`
 
 4. Build and start:
 

@@ -15,6 +15,8 @@ docs/     — deploy / product notes
 ## What is solid
 
 - Clear API/web boundary; AI keys stay on the server
+- Plan routing: free → OpenAI **GPT-5.6 Luna** (standard), paid → Moonshot (advanced)
+- Tight free quota (20k tokens/mo); document generation paid-only
 - SSE chat, agents, attachments, quotas, tests, CI
 - Chat → application document (Markdown + DOCX)
 

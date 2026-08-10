@@ -12,6 +12,15 @@ export interface AuthSession {
   expiresAt: number
 }
 
+export interface PlanFeatures {
+  plan: string
+  aiTier: 'standard' | 'advanced'
+  provider: string
+  canGenerateDocuments: boolean
+  canUseAdvancedAgents: boolean
+  monthlyTokenLimit: number
+}
+
 export interface UserProfile {
   id: string
   email: string
@@ -20,6 +29,7 @@ export interface UserProfile {
   monthlyTokenLimit: number
   tokensUsed: number
   createdAt: string
+  features: PlanFeatures
 }
 
 async function parseErrorBody(response: Response): Promise<string> {
@@ -91,6 +101,14 @@ export async function fetchProfile(accessToken: string): Promise<UserProfile> {
     monthlyTokenLimit: data.monthly_token_limit,
     tokensUsed: data.tokens_used,
     createdAt: data.created_at,
+    features: data.features ?? {
+      plan: data.plan,
+      aiTier: data.plan === 'free' ? 'standard' : 'advanced',
+      provider: data.plan === 'free' ? 'openai' : 'moonshot',
+      canGenerateDocuments: data.plan !== 'free',
+      canUseAdvancedAgents: true,
+      monthlyTokenLimit: data.monthly_token_limit,
+    },
   }
 }
 

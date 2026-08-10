@@ -1,17 +1,23 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import request from 'supertest';
 
-const { supabaseAdminMock, streamChatCompletionMock } = vi.hoisted(() => ({
-  supabaseAdminMock: {
-    from: vi.fn(),
-    auth: { getUser: vi.fn() },
-    storage: { from: vi.fn() },
-  },
-  streamChatCompletionMock: vi.fn(),
-}));
+const { supabaseAdminMock, streamChatForPlanMock, isProviderConfiguredForPlanMock } = vi.hoisted(
+  () => ({
+    supabaseAdminMock: {
+      from: vi.fn(),
+      auth: { getUser: vi.fn() },
+      storage: { from: vi.fn() },
+    },
+    streamChatForPlanMock: vi.fn(),
+    isProviderConfiguredForPlanMock: vi.fn(() => true),
+  }),
+);
 
 vi.mock('../config/supabase.js', () => ({ supabaseAdmin: supabaseAdminMock }));
-vi.mock('../config/moonshot.js', () => ({ streamChatCompletion: streamChatCompletionMock }));
+vi.mock('../services/aiProvider.js', () => ({
+  streamChatForPlan: streamChatForPlanMock,
+  isProviderConfiguredForPlan: isProviderConfiguredForPlanMock,
+}));
 
 const { app } = await import('../app.js');
 const { queueFromResults } = await import('../test/supabaseMock.js');
@@ -28,6 +34,7 @@ function parseSSE(text) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  isProviderConfiguredForPlanMock.mockReturnValue(true);
   supabaseAdminMock.auth.getUser.mockResolvedValue({ data: { user: USER }, error: null });
 });
 
@@ -76,7 +83,7 @@ describe('POST /api/chat — quota and lookups', () => {
 
   it('returns 402 when the token quota is exhausted', async () => {
     queueFromResults(supabaseAdminMock.from, [
-      { data: { monthly_token_limit: 100, tokens_used: 100 }, error: null },
+      { data: { plan: 'free', monthly_token_limit: 100, tokens_used: 100 }, error: null },
     ]);
 
     const res = await request(app)
@@ -85,12 +92,12 @@ describe('POST /api/chat — quota and lookups', () => {
       .send({ agentId: 'budget', message: 'hi' });
 
     expect(res.status).toBe(402);
-    expect(streamChatCompletionMock).not.toHaveBeenCalled();
+    expect(streamChatForPlanMock).not.toHaveBeenCalled();
   });
 
   it('returns 404 when a given conversationId does not belong to the caller', async () => {
     queueFromResults(supabaseAdminMock.from, [
-      { data: { monthly_token_limit: 100000, tokens_used: 0 }, error: null },
+      { data: { plan: 'free', monthly_token_limit: 20000, tokens_used: 0 }, error: null },
       { data: null, error: { message: 'not found' } },
     ]);
 
@@ -106,18 +113,19 @@ describe('POST /api/chat — quota and lookups', () => {
 describe('POST /api/chat — streaming happy path', () => {
   it('streams deltas, then a done event, and persists the exchange', async () => {
     queueFromResults(supabaseAdminMock.from, [
-      { data: { monthly_token_limit: 100000, tokens_used: 0 }, error: null }, // profile
-      { data: { id: 'conv-1', agent_id: 'budget', user_id: USER.id }, error: null }, // new conversation
-      { data: [], error: null }, // history
-      { data: null, error: null }, // insert user message
-      { data: null, error: null }, // insert assistant message
-      { data: null, error: null }, // update conversation.updated_at
-      { data: null, error: null }, // update users.tokens_used
+      { data: { plan: 'pro', monthly_token_limit: 100000, tokens_used: 0 }, error: null },
+      { data: { id: 'conv-1', agent_id: 'budget', user_id: USER.id }, error: null },
+      { data: [], error: null },
+      { data: null, error: null },
+      { data: null, error: null },
+      { data: null, error: null },
+      { data: null, error: null },
     ]);
-    streamChatCompletionMock.mockImplementation(async ({ onDelta, onUsage }) => {
+    streamChatForPlanMock.mockImplementation(async ({ onDelta, onUsage }) => {
       onDelta('Hello');
       onDelta(' world');
       onUsage({ total_tokens: 42 });
+      return { id: 'moonshot' };
     });
 
     const res = await request(app)
@@ -136,17 +144,19 @@ describe('POST /api/chat — streaming happy path', () => {
       conversationId: 'conv-1',
       tokensUsed: 42,
       tokenLimit: 100000,
+      provider: 'moonshot',
+      aiTier: 'advanced',
     });
   });
 
-  it('sends an error event and stops if the Moonshot stream fails mid-flight', async () => {
+  it('sends an error event and stops if the AI stream fails mid-flight', async () => {
     queueFromResults(supabaseAdminMock.from, [
-      { data: { monthly_token_limit: 100000, tokens_used: 0 }, error: null },
+      { data: { plan: 'free', monthly_token_limit: 20000, tokens_used: 0 }, error: null },
       { data: { id: 'conv-2', agent_id: 'budget', user_id: USER.id }, error: null },
       { data: [], error: null },
       { data: null, error: null },
     ]);
-    streamChatCompletionMock.mockRejectedValue(new Error('upstream exploded'));
+    streamChatForPlanMock.mockRejectedValue(new Error('upstream exploded'));
 
     const res = await request(app)
       .post('/api/chat')
@@ -159,7 +169,7 @@ describe('POST /api/chat — streaming happy path', () => {
 
   it('allows an attachment-only message with empty text', async () => {
     queueFromResults(supabaseAdminMock.from, [
-      { data: { monthly_token_limit: 100000, tokens_used: 0 }, error: null },
+      { data: { plan: 'free', monthly_token_limit: 20000, tokens_used: 0 }, error: null },
       { data: { id: 'conv-3', agent_id: 'budget', user_id: USER.id }, error: null },
       { data: [], error: null },
       { data: null, error: null },
@@ -167,17 +177,25 @@ describe('POST /api/chat — streaming happy path', () => {
       { data: null, error: null },
       { data: null, error: null },
     ]);
-    streamChatCompletionMock.mockImplementation(async ({ onDelta }) => {
+    streamChatForPlanMock.mockImplementation(async ({ onDelta }) => {
       onDelta('Got it.');
+      return { id: 'openai' };
     });
 
     const res = await request(app)
       .post('/api/chat')
       .set('Authorization', 'Bearer t')
-      .send({ agentId: 'budget', message: '', attachmentPath: `${USER.id}/abc-plan.pdf`, attachmentName: 'plan.pdf' });
+      .send({
+        agentId: 'budget',
+        message: '',
+        attachmentPath: `${USER.id}/abc-plan.pdf`,
+        attachmentName: 'plan.pdf',
+      });
 
     expect(res.status).toBe(200);
     const events = parseSSE(res.text);
     expect(events.at(-1).done).toBe(true);
+    expect(events.at(-1).provider).toBe('openai');
+    expect(events.at(-1).aiTier).toBe('standard');
   });
 });

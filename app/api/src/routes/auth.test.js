@@ -207,7 +207,7 @@ describe('GET /api/auth/me', () => {
       email: 'a@b.com',
       name: 'Nick',
       plan: 'free',
-      monthly_token_limit: 100000,
+      monthly_token_limit: 20000,
       tokens_used: 0,
       created_at: '2026-01-01T00:00:00.000Z',
     };
@@ -216,6 +216,15 @@ describe('GET /api/auth/me', () => {
     const res = await request(app).get('/api/auth/me').set('Authorization', 'Bearer sometoken');
 
     expect(res.status).toBe(200);
-    expect(res.body).toEqual(profile);
+    expect(res.body.id).toBe('u1');
+    expect(res.body.plan).toBe('free');
+    expect(res.body.features).toEqual({
+      plan: 'free',
+      aiTier: 'standard',
+      provider: 'openai',
+      canGenerateDocuments: false,
+      canUseAdvancedAgents: true,
+      monthlyTokenLimit: 20000,
+    });
   });
 });

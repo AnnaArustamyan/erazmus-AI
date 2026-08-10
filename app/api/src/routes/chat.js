@@ -1,13 +1,15 @@
 import { Router } from 'express';
 import { supabaseAdmin } from '../config/supabase.js';
 import { verifyAuth } from '../middleware/auth.js';
-import { streamChatCompletion } from '../config/moonshot.js';
-import { isMoonshotConfigured } from '../config/env.js';
 import { AGENTS, isValidAgentId } from '../lib/agents.js';
+import { getPlanConfig } from '../lib/plans.js';
+import {
+  isProviderConfiguredForPlan,
+  streamChatForPlan,
+} from '../services/aiProvider.js';
 import { applyTokenUsage, getUserQuota, isQuotaExhausted } from '../services/quota.js';
 
 const router = Router();
-const MAX_HISTORY_MESSAGES = 20;
 
 function writeEvent(res, payload) {
   res.write(`data: ${JSON.stringify(payload)}\n\n`);
@@ -17,14 +19,9 @@ function writeEvent(res, payload) {
  * POST /api/chat
  * body: { agentId, message, conversationId? }
  * Streams the agent's reply back as Server-Sent Events.
+ * Free plan → OpenAI (standard). Paid plans → Moonshot (advanced).
  */
 router.post('/', verifyAuth, async (req, res) => {
-  if (!isMoonshotConfigured()) {
-    return res.status(503).json({
-      error: 'AI provider is not configured. Set MOONSHOT_API_KEY on the server.',
-    });
-  }
-
   const { agentId, message, conversationId, attachmentPath, attachmentName } = req.body;
 
   if (!agentId || !isValidAgentId(agentId)) {
@@ -45,8 +42,17 @@ router.post('/', verifyAuth, async (req, res) => {
     return res.status(404).json({ error: 'Profile not found' });
   }
   if (isQuotaExhausted(profile)) {
-    console.warn('[chat] quota exceeded', { userId: req.user.id, agentId });
+    console.warn('[chat] quota exceeded', { userId: req.user.id, agentId, plan: profile.plan });
     return res.status(402).json({ error: 'Token quota exhausted. Upgrade your plan to continue.' });
+  }
+
+  const planConfig = getPlanConfig(profile.plan);
+  if (!isProviderConfiguredForPlan(profile.plan)) {
+    const needed =
+      planConfig.provider === 'openai' ? 'OPENAI_API_KEY' : 'MOONSHOT_API_KEY';
+    return res.status(503).json({
+      error: `AI provider is not configured for your plan. Set ${needed} on the server.`,
+    });
   }
 
   let conversation;
@@ -74,7 +80,7 @@ router.post('/', verifyAuth, async (req, res) => {
     .select('role, content')
     .eq('conversation_id', conversation.id)
     .order('created_at', { ascending: true })
-    .limit(MAX_HISTORY_MESSAGES);
+    .limit(planConfig.maxHistoryMessages);
 
   if (historyError) return res.status(500).json({ error: 'Could not load conversation history' });
 
@@ -103,9 +109,11 @@ router.post('/', verifyAuth, async (req, res) => {
 
   let fullText = '';
   let totalTokens = 0;
+  let providerId = planConfig.provider;
 
   try {
-    await streamChatCompletion({
+    const provider = await streamChatForPlan({
+      plan: profile.plan,
       messages: chatMessages,
       onDelta: (delta) => {
         fullText += delta;
@@ -115,8 +123,9 @@ router.post('/', verifyAuth, async (req, res) => {
         totalTokens = usage.total_tokens ?? 0;
       },
     });
+    providerId = provider.id;
   } catch (err) {
-    console.error('[chat] Moonshot stream failed', err);
+    console.error('[chat] AI stream failed', err);
     writeEvent(res, { error: 'AI provider request failed. Please try again.' });
     return res.end();
   }
@@ -146,6 +155,8 @@ router.post('/', verifyAuth, async (req, res) => {
     conversationId: conversation.id,
     tokensUsed,
     tokenLimit: profile.monthly_token_limit,
+    provider: providerId,
+    aiTier: planConfig.aiTier,
   });
   res.end();
 });

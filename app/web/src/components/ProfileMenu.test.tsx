@@ -9,6 +9,7 @@ const BASE_PROPS = {
   plan: 'pro',
   tokensUsed: 1_240_000,
   tokenLimit: 3_000_000,
+  aiTier: 'advanced' as const,
   onSignOut: vi.fn(),
 }
 
@@ -32,6 +33,7 @@ describe('ProfileMenu', () => {
     expect(screen.getByText('Nikita G.')).toBeInTheDocument()
     expect(screen.getByText('n.gr@ngo-example.org')).toBeInTheDocument()
     expect(screen.getByText('Pro plan')).toBeInTheDocument()
+    expect(screen.getByText('Advanced AI')).toBeInTheDocument()
     expect(screen.getByText('1,240,000 / 3,000,000 tokens')).toBeInTheDocument()
 
     const bar = screen.getByRole('progressbar', { name: /tokens used this billing period/i })
