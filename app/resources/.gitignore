@@ -1,0 +1,4 @@
+# Raw PDFs name applicant organisations and official project codes.
+# Keep them on disk for local ingestion; never commit.
+*.pdf
+**/*.pdf

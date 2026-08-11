@@ -19,3 +19,6 @@ yarn-error.log*
 # misc
 *.pem
 .vercel
+
+# Raw grant PDFs (applicant org names + official project codes). Use app/resources/derived/ instead.
+app/resources/**/*.pdf

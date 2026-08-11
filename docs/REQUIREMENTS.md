@@ -1,375 +1,247 @@
-# Erasmus AI — Product Development Requirements
+# Erasmus AI — Development Requirements Document
 
-**Version:** 1.0  
+**Version:** 1.1  
 **Date:** 2026-08-10  
 **Status:** Ready for implementation  
 **Audience:** Frontend + backend developers  
-**Codebase:** `app/web` (React + Vite), `app/api` (Express), Supabase, OpenAI Luna + Moonshot  
+**Owners:** Product  
+**Codebase:** `app/web` (React + Vite + Tailwind), `app/api` (Express), Supabase, OpenAI Luna + Moonshot  
 
 ---
 
-## 1. Purpose
+## 1. Summary
 
-Turn the current MVP into a **polished, client-ready product** with:
+Ship a paid Erasmus+ grant assistant whose drafts are built to **pass National Agency review**.
 
-1. Document generation available on **all plans** (including Free)
-2. A proper **user profile & settings** area (as expected on modern SaaS AI products)
-3. **ChatGPT-like chat UX** (regenerate, edit message, copy, etc.) while keeping **our existing visual design** (Erasmus AI theme — not a ChatGPT clone look)
+Anyone can open ChatGPT or Claude and ask for a grant. Those drafts are often rejected because of AI-sounding language, missed Programme Guide criteria, and weak alignment with what reviewers actually mark down. We win only if our models are **preconfigured** to follow Erasmus+ rules every time — not if we are “another chat box.”
 
-This document is the source of truth for the next development sprint. Anything not listed here is out of scope unless product explicitly adds it.
+Product UX (settings, durable session, ChatGPT-like controls, docs on every plan) is required for a shippable SaaS. The **moat** is pass-rate knowledge and constrained generation.
+
+This sprint must deliver:
+
+1. Document generation on **all plans** (Free included; quota- and cap-gated)
+2. Real **profile / settings** area
+3. **ChatGPT-like chat controls** (edit, regenerate, copy, stop) in our design
+4. Session that survives refresh
+5. Cost control via quotas and monthly doc caps (not by locking export behind paywall)
+6. **Pass-rate foundation:** Programme Guide + failed-grant examples wired into generation (at least v1 prompts + ingestion path)
 
 ---
 
-## 2. Current product (baseline)
+## 2. Product differentiator (non-negotiable)
 
-Already working:
+### Problem we solve
 
-- Auth (register / login / session refresh)
-- streaming chat + conversation history + attachments
+Generic LLMs produce fluent text. National Agencies reject many of those drafts because:
+
+- AI traces / generic phrasing
+- Programme Guide criteria not met for the action type and year
+- Prior rejection patterns ignored (same mistakes repeat)
+
+### What we uniquely bring
+
+| Asset | Source | Cadence |
+|---|---|---|
+| Erasmus+ Programme Guide (“the book”) | Public EU / NA materials on the internet | **Updates every year** — we must refresh our knowledge pack yearly |
+| Failed grant examples | Our corpus | With **reviewer feedback explaining why they failed** |
+| Pass rules | Derived from guide + failure feedback | Encoded into system prompts and retrieval so every generation follows them |
+
+### Hard product rules
+
+**FR-PASS-1.** Every chat reply and every generated application section must run under a **constrained Erasmus+ system configuration** (not a bare model with a short user prompt).
+
+**FR-PASS-2.** Models must always be steered to:
+
+- Meet current-year Programme Guide criteria for the relevant action
+- Avoid obvious AI traces (generic filler, buzzword stacking, vague impact claims)
+- Prefer concrete, reviewable, criteria-aligned wording
+- Use failed-grant feedback as negative examples (“do not repeat these failure modes”)
+
+**FR-PASS-3.** Prefer **retrieval of guide excerpts + failed examples** over relying on the base model’s general knowledge. The book changes yearly; frozen model weights will drift.
+
+**FR-PASS-4.** Yearly ops: when the new Programme Guide is published, update the knowledge pack, bump a `guide_year` / version label in the product, and re-validate generation against the new criteria. Document this as a recurring release task.
+
+**FR-PASS-5.** Free and paid both use the same pass-rate constraints; paid mainly gets a stronger model + higher limits — not “unlock the book.”
+
+---
+
+## 3. Current baseline (do not rewrite the stack)
+
+Working today:
+
+- Auth (register / login / refresh)
+- Streaming chat, conversation history, attachments
 - Token quotas by plan
-- Plan-based AI routing: Free → OpenAI `gpt-5.6-luna`; Paid → Moonshot
-- Document generation from conversation (MD + DOCX) — **currently paid-only**
+- Free → OpenAI Luna; paid → Moonshot
+- Chat → document generation (MD + DOCX), currently gated to paid
 - Minimal profile menu (name, plan, tokens, sign out)
 
-Pain points to fix:
-
-- Free users cannot generate documents
-- remove the 4 agents from agents we will need only one which asks 20-30 choice and free text input field questions to generate the document based on that
-- No dedicated settings / account management pages
-- Chat lacks modern message actions and page refresh and other intuitive actions dont have the standard common behaviors(edit, regenerate, copy, stop, etc.)
-- user login session should not disappear after refresh we should have proper session handling
----
-
-## 3. Goals & non-goals
-
-### Goals
-
-- Every plan can generate application documents (subject to token quota)
-- Users can manage account preferences in a clear Profile / Settings area
-- Chat feels modern and controllable (edit / regenerate / copy), in our design system
-- Keep cost controls via quotas (not by blocking document generation)
-
-- Full Who/Where/When grant wizard UI (chat-first remains primary)
-- PDF export (MD + DOCX only)
-- can upload and analyse the uploaded files (pdf text md and stuff)
-- Mobile native
-- Replacing Supabase or rewriting the stack analysis
+Gaps this document closes: docs on Free, settings area, chat message actions, durable session, and the pass-rate knowledge / prompt foundation.
 
 ---
 
-## 4. Personas
+## 4. In scope vs out of scope
 
-| Persona | Needs |
-|---|---|
-| NGO grant writer (Free) | Try product, chat with agents, generate a draft doc without paying first |
-| Paying subscriber (Basic/Pro) | Higher quota, Advanced AI (Moonshot), same UX as free + more capacity |
-| Admin (internal) | Change user plan in DB for now (Stripe later) |
+### In scope
 
----
+- Docs on all plans, gated by token quota and monthly doc caps
+- Profile / settings / usage / security / documents pages
+- Chat controls: copy, regenerate, edit and resend, stop
+- Session that survives page refresh
+- Upload + analyse files (PDF, TXT, MD) as inputs to chat and generation
+- Clear upgrade path: better model + higher limits (not “unlock export”)
+- Pass-rate system prompts + knowledge ingestion path (Programme Guide + failed examples with feedback)
 
-## 5. Feature requirements
+### Out of scope for this sprint
 
-### 5.1 Document generation on all plans
-
-**FR-DOC-1.** `canGenerateDocuments` must be `true` for `free`, `basic`, `pro`, and `enterprise`.
-
-**FR-DOC-2.** Free users use the Free AI provider (OpenAI Luna) for both chat and document drafting. Paid users use Moonshot for both (unless product later splits this).
-
-**FR-DOC-3.** Document generation must still:
-
-- Require an authenticated user
-- Consume tokens from the user’s monthly quota
-- Fail with `402` when quota is exhausted (clear upgrade message)
-- Produce Markdown + DOCX download links
-- Support `POST /api/documents/from-conversation` and list/download APIs
-
-**FR-DOC-4.** UI: show **Generate application** for all logged-in users when the active conversation has at least one user or assistant message.
-
-**FR-DOC-5.** Free-tier cost control (mandatory product rules, not feature locks):
-
-| Rule | Requirement |
-|---|---|
-| Monthly token cap | Keep Free at **20,000** tokens/month (configurable in `plans.js`) |
-| Docs per month (Free) | Soft limit: **max 3 generated documents / calendar month** (enforce server-side) |
-| Docs per month (Basic) | **20** |
-| Docs per month (Pro+) | **100** (or unlimited within token quota — pick one and document in code) |
-| Empty / tiny chats | Reject generation if conversation has fewer than **2 messages** or total content &lt; ~200 characters |
-
-**FR-DOC-6.** After generation, show a persistent “Documents” section (not only a dismissible banner): title, date, Download MD, Download DOCX.
-
-**Acceptance**
-
-- [ ] Free user can generate MD + DOCX from a real conversation
-- [ ] Free user blocked after doc monthly cap with clear message
-- [ ] Paid user uses Moonshot for generation
-- [ ] Existing tests updated; new tests for free generation + caps
+- Live Stripe billing (manual plan change in DB is OK for launch)
+- PDF export
+- Mobile native apps
+- AWS migration
+- Rewriting away from Supabase
+- Fully automated scraping of the Guide each year (manual curated pack for v1 is OK; process must be documented)
 
 ---
 
-### 5.2 User profile & settings
+## 5. Plans, AI routing, and document access
 
-Build a proper account area comparable to ChatGPT / Claude / Notion-style settings (content & structure), **using our design tokens / layout**.
-
-#### Information architecture
-
-```
-/app (chat workspace — default after login)
-/settings                  → redirect to /settings/profile
-/settings/profile          → name, email (read-only email), avatar optional later
-/settings/preferences      → theme, default agent, language placeholder
-/settings/usage            → plan, AI tier, tokens used/limit, docs used/limit
-/settings/security         → change password, sign out all sessions (best-effort)
-/settings/documents        → list generated documents + downloads
-```
-
-Use client-side routing in the Vite app (React Router or equivalent). Keep the existing chat as the home experience.
-
-**FR-PROF-1. Profile**
-
-- Display and edit **display name**
-- Show email (read-only for now; change-email can be “coming soon”)
-- Save via `PATCH /api/auth/me` (or `PATCH /api/users/me`)
-- Success / error toasts or inline status
-
-**FR-PROF-2. Preferences**
-
-- Theme: Light / Dark (persist to `localStorage` and optionally `users.theme` column)
-- Default agent on new chat (one of the 4 agents)
-- Optional: “Enter sends message” vs newline (ChatGPT-like toggle)
-
-**FR-PROF-3. Usage**
-
-- Plan name, AI tier label (“Standard AI” / “Advanced AI”)
-- Token progress bar (used / limit)
-- Documents this month (used / limit)
-- Copy explaining Free vs Paid differences (quota + model quality — not “docs locked”)
-
-**FR-PROF-4. Security**
-
-- Change password (Supabase Auth update password flow via API)
-- Sign out
-- Optional: “Sign out of this device”
-
-**FR-PROF-5. Navigation**
-
-- Replace / extend the small avatar menu:
-  - Settings
-  - Documents
-  - Usage
-  - Sign out
-- Settings pages share a left subnav + content panel, desktop-first; usable on mobile
-
-**FR-PROF-6. API**
-
-| Method | Path | Purpose |
-|---|---|---|
-| `GET` | `/api/auth/me` | Already exists; extend with `features`, `documentsThisMonth`, prefs |
-| `PATCH` | `/api/auth/me` | Update `name`, `theme`, `default_agent` |
-| `POST` | `/api/auth/change-password` | `{ currentPassword, newPassword }` |
-
-**Acceptance**
-
-- [ ] User can open Settings from avatar menu and update name
-- [ ] Theme preference persists across refresh
-- [ ] Usage page shows accurate quota numbers
-- [ ] Documents page lists generated files with downloads
-
----
-
-### 5.3 Chat UX (ChatGPT-like behavior, our design)
-
-Keep current Erasmus AI visual language (colors, sidebar, agent tabs). Add **behaviors** users expect from modern AI chat.
-
-#### Message actions (assistant messages)
-
-**FR-CHAT-1. Copy** — copy message text to clipboard; brief “Copied” feedback.
-
-**FR-CHAT-2. Regenerate** — re-run the last assistant reply for the same user prompt (new assistant message or replace last — **replace last** is preferred). Deduct tokens again. Keep agent id.
-
-**FR-CHAT-3. Stop generating** — abort in-flight SSE stream; keep partial text; mark status complete/partial.
-
-#### Message actions (user messages)
-
-**FR-CHAT-4. Edit & resend** — user can edit a prior user message; on submit:
-
-1. Truncate conversation after that message (UI + server)
-2. Save edited user message
-3. Stream a new assistant reply
-
-Server must support this safely (recommended endpoint below).
-
-**FR-CHAT-5. Retry** — already exists for failed sends; keep it.
-
-#### Composer / thread
-
-**FR-CHAT-6.** Streaming cursor / “thinking” indicator (already partly present — polish).
-
-**FR-CHAT-7.** Keyboard: Enter to send, Shift+Enter newline (honor preference from settings).
-
-**FR-CHAT-8.** Disable composer while streaming unless Stop is available.
-
-**FR-CHAT-9.** Hover or focus reveals action icons; accessible via keyboard.
-
-#### Suggested API additions
-
-| Method | Path | Purpose |
-|---|---|---|
-| `POST` | `/api/chat` | Existing stream; add optional `replaceAssistantMessageId` for regenerate |
-| `POST` | `/api/chat/edit` | `{ conversationId, messageId, text, agentId }` → truncate after message, update text, stream new reply |
-| `POST` | `/api/chat/stop` | Optional if abort is client-only (AbortController); document approach |
-
-**Client abort:** Prefer `AbortController` on the fetch/SSE reader for Stop (no server endpoint required if connection drop is enough).
-
-**Acceptance**
-
-- [ ] Copy works on assistant messages
-- [ ] Regenerate replaces last assistant answer and updates DB
-- [ ] Edit user message truncates later messages and regenerates
-- [ ] Stop cancels stream without crashing UI
-- [ ] All actions styled in existing design system (no ChatGPT branding)
-
----
-
-## 6. Plan & pricing rules (updated)
-
-| Plan | AI | Monthly tokens | Doc generation | Docs / month |
+| Plan | Provider / model | Monthly tokens | Can generate docs | Docs / month |
 |---|---|---|---|---|
-| Free | OpenAI Luna (Standard) | 20,000 | **Yes** | 3 |
-| Basic | Moonshot (Advanced) | 500,000 | Yes | 20 |
-| Pro | Moonshot (Advanced) | 2,000,000 | Yes | 100 |
-| Enterprise | Moonshot (Advanced) | 10,000,000 | Yes | 100 (or unlimited) |
+| Free | OpenAI `gpt-5.6-luna` | 20,000 | **Yes** | 3 |
+| Basic | Moonshot (configured model) | 500,000 | Yes | 20 |
+| Pro | Moonshot (configured model) | 2,000,000 | Yes | 100 |
+| Enterprise | Moonshot (configured model) | 10,000,000 | Yes | 100 |
 
-**Differentiation is quality + quota, not “can’t export.”**
+Implementation notes:
 
-Update `app/api/src/lib/plans.js` and enforce doc caps in document routes. Add DB tracking (see Data model).
+- Single source of truth: `app/api/src/lib/plans.js`
+- Gate on **quota + monthly doc count**, never on “Free cannot generate”
+- Upgrade CTA copy: stronger pass-rate model + higher limits, not unlocking export
+- Free doc generation still billed to Luna; cap tightly so Free is a funnel
 
 ---
 
-## 7. Data model changes
+## 6. User profile and settings
 
-### 7.1 `users` table (additive)
+**FR-SET-1.** Real routes (not only a dropdown):
 
-```sql
--- preferences
-alter table public.users
-  add column if not exists theme text default 'system',
-  add column if not exists default_agent text default 'compliance',
-  add column if not exists enter_to_send boolean default true,
-  add column if not exists documents_generated_this_month integer not null default 0,
-  add column if not exists documents_quota_reset_at timestamptz not null default date_trunc('month', now());
+```
+/                     → chat workspace (default after login)
+/settings             → redirect to profile
+/settings/profile     → name, email (read-only), save
+/settings/preferences → theme, enter-to-send, default agent
+/settings/usage       → plan, AI tier, tokens, document caps
+/settings/security    → change password, sign out
+/settings/documents   → list + download generated docs
 ```
 
-Validate `default_agent` against known agent ids in API.
+**FR-SET-2.** Profile menu expands to: Settings, Documents, Usage, Sign out.
 
-### 7.2 Document monthly reset
-
-On each document create:
-
-1. If `now()` is past `documents_quota_reset_at` month → reset counter to 0 and bump reset date to start of current month
-2. If counter ≥ plan limit → `403` with upgrade message
-3. Else create document and increment counter
-
-(Alternatively derive count from `documents` table by `created_at` this month — preferred for accuracy; counter is optional cache.)
-
-**Preferred:** count rows in `documents` for `user_id` where `created_at >= date_trunc('month', now())`.
+**FR-SET-3.** Change password via backend using Supabase Auth APIs; never expose service-role secrets to the client.
 
 ---
 
-## 8. UX / design constraints
+## 7. Chat behaviors (must feel standard)
 
-- Reuse existing CSS variables / theme (`data-theme`, app-* tokens)
-- No purple “generic AI SaaS” redesign; no ChatGPT logo or copycat layout
-- Settings: simple two-column layout (nav + panel), not a heavy dashboard
-- Chat actions: subtle icon buttons (lucide-react already in project)
-- Empty states with one short sentence + primary action
+All within current visual design (sidebar, agents, existing tokens):
 
----
-
-## 9. Technical constraints
-
-- Keep monorepo layout: `app/api`, `app/web`
-- Secrets only in `app/api/.env` (never expose OpenAI/Moonshot/Supabase secret to web)
-- Preserve SSE streaming for chat
-- Update / add Vitest tests for API; RTL tests for critical UI (edit, regenerate, settings save)
-- Do not break existing auth cookie/token flow (Bearer access token)
+| ID | Behavior | Detail |
+|---|---|---|
+| FR-CHAT-1 | Copy | Copy assistant (and optionally user) message; toast “Copied” |
+| FR-CHAT-2 | Regenerate | Re-answer last user turn; replace last assistant message; charge tokens |
+| FR-CHAT-3 | Stop | Abort SSE; keep partial text |
+| FR-CHAT-4 | Edit and resend | Edit any prior user message; delete all messages after it; resend; stream new reply |
+| FR-CHAT-5 | Retry failed | Keep existing retry on error state |
+| FR-CHAT-6 | Refresh-safe session | Login survives page refresh via refresh-token restore |
+| FR-CHAT-7 | Refresh-safe chat | Active conversation and messages reload after refresh |
+| FR-CHAT-8 | Upload + analyse | Upload PDF / TXT / MD; backend extracts text into agent context |
 
 ---
 
-## 10. Delivery phases (recommended)
+## 8. Guided intake
 
-### Phase A — Plan + documents (0.5–1 day)
+Specialist sidebar agents may remain for chat help, but document creation should not depend on the user knowing which agent to pick.
 
-- Enable docs on Free
-- Doc monthly caps
-- Documents list page / panel
-- Tests
+**FR-AGENT-1.** Primary CTA: one clear **Generate application** path from the active conversation.
 
-### Phase B — Settings shell (1–1.5 days)
-
-- Routing + settings layout
-- Profile name edit
-- Preferences (theme, default agent)
-- Usage page
-- Wire avatar menu
-
-### Phase C — Chat actions (1.5–2 days)
-
-- Copy, Stop, Regenerate
-- Edit & resend + server truncate
-- Polish + tests
-
-### Phase D — Hardening (0.5 day)
-
-- Error messages for quota / AI billing failures
-- README / STACK update
-- Smoke checklist for QA
-
-**Target order:** A → B → C → D
+**FR-AGENT-2.** Longer-term (same epic, can follow chat/settings): one Guided Grant Agent that asks ~20–30 structured questions (choices + free text + optional uploads), then generates the doc under the same pass-rate constraints.
 
 ---
 
-## 11. QA smoke checklist
+## 9. Pass-rate knowledge & model preconfiguration (engineering)
 
-1. Register free user → chat with Compliance Officer → **Generate application** → download MD + DOCX  
-2. Generate until Free doc cap → clear error  
-3. Open Settings → change name + theme → refresh → persisted  
-4. Usage shows tokens + docs counts  
-5. Edit an old user message → later messages removed → new answer streams  
-6. Regenerate last answer  
-7. Copy assistant message  
-8. Stop mid-stream  
-9. Upgrade user to `pro` in DB → Advanced AI label + higher limits  
+v1 does not need a perfect RAG platform, but it must not be “call Luna/Moonshot with a thin prompt.”
 
----
+**FR-KB-1.** Store a versioned knowledge pack. v1 lives in `app/resources/` (see that folder’s `README.md` and `MAPPING.md`):
 
-## 12. Open questions (resolve before / during Phase A)
+- Current Programme Guide excerpts (by action / section where possible) — start with `derived/guide-youth-workers.md`
+- Failed applications + structured reviewer feedback — `derived/assessments/` (anonymized); raw PDFs are local-only
+- Explicit “must / must-not” rules — `derived/rules.md` (inject into every generation)
 
-1. Free doc cap: **3 / month** OK, or product wants **1** / **5**?  
-2. After edit: delete messages after the edited one in DB, or soft-hide? (**Recommend hard delete** for simplicity.)  
-3. Regenerate: replace last assistant message vs append variant? (**Recommend replace.**)  
-4. Settings URL paths: `/settings/...` vs modal-only? (**Recommend real routes.**)
+Assessments + Guide youth-worker section are **canonical**. Full applications are **negative examples**, not templates. Never commit PDFs that name organisations or project codes.
 
----
+**FR-KB-2.** Chat and document generation always inject:
 
-## 13. Success definition
+1. Base Erasmus+ system prompt (pass criteria, anti-AI-trace rules)
+2. Relevant retrieved guide chunks for the user’s action / topic
+3. Relevant failure-mode examples when writing or revising sections
 
-This sprint is done when a new Free user can:
+**FR-KB-3.** Document a yearly refresh runbook: source URLs, how to update the pack, how to bump `guide_year`, smoke tests on sample sections.
 
-1. Sign up and use chat with modern message controls  
-2. Manage profile/settings in a dedicated area  
-3. Generate and download an application document without upgrading  
-
-…and paid users still get Advanced AI + higher quotas as the upgrade incentive.
+**FR-KB-4.** Never rely on the user pasting the Guide into the chat. The product owns that context.
 
 ---
 
-## 14. References (code)
+## 10. Session durability
 
-| Area | Location |
-|---|---|
-| Plans / features | `app/api/src/lib/plans.js` |
-| Chat API | `app/api/src/routes/chat.js` |
-| Documents API | `app/api/src/routes/documents.js` |
-| Chat UI | `app/web/src/components/ErasmusChatWorkspace.tsx` + `components/chat/*` |
-| Auth / profile menu | `app/web/src/App.tsx`, `ProfileMenu.tsx`, `auth/AuthContext.tsx` |
-| Deploy notes | `docs/DEPLOY.md`, `docs/STACK.md` |
+**FR-SESS-1.** Login must survive full page refresh (restore access + refresh tokens; refresh-on-load).
+
+**FR-SESS-2.** Active conversation id and messages must reload after refresh.
+
+**FR-SESS-3.** Prefer httpOnly cookie session if feasible; if tokens stay in web storage, implement silent refresh and document the threat model.
+
+---
+
+## 11. Implementation notes for developers
+
+- Single source of plan truth: `app/api/src/lib/plans.js`
+- Chat UI modules: `app/web/src/components/chat/`
+- Do not put API keys in `app/web`
+- Prefer counting monthly docs from `documents.created_at` over a denormalized counter
+- For edit/resend: hard-delete trailing messages after the edited user message
+- For Luna requests: do not send custom `temperature` (API rejects non-default)
+- Keep pass-rate prompts and knowledge injection server-side only
+- Knowledge pack handoff: `app/resources/README.md` (canonical vs example, privacy, yearly refresh)
+
+---
+
+## 12. Suggested implementation order
+
+1. Unlock docs on Free + monthly doc caps + tests  
+2. Settings routes + profile / preferences / usage / documents pages  
+3. Chat actions: copy, stop, regenerate, edit and resend  
+4. Session restore on refresh (if not fully solid)  
+5. Pass-rate v1: system prompts + knowledge pack structure + inject into chat/doc generation  
+6. Guided intake agent; expand Programme Guide + failed-grant corpus; yearly refresh runbook  
+
+---
+
+## 13. QA checklist
+
+1. Free user: register → chat → generate doc → download MD/DOCX  
+2. Free user: hit monthly doc cap → clear error  
+3. Settings: change name + theme → survive refresh  
+4. Usage: tokens and doc counts correct  
+5. Edit message → trailing messages removed → new stream  
+6. Regenerate last assistant message  
+7. Copy + stop generation  
+8. Page refresh → still logged in, conversation restored  
+9. Pro user in DB → Advanced AI + higher limits  
+10. Generated draft reflects Programme Guide criteria (sample checklist by action)  
+11. Prompted failure modes from our examples are avoided in a revision test  
+
+---
+
+## 14. Success definition
+
+A Free user can sign up, chat with message controls, open settings, stay logged in after refresh, and download an application draft **without leaving for ChatGPT** — and that draft is produced under Erasmus+ pass rules (current Guide year + failure feedback), not a generic LLM reply.
