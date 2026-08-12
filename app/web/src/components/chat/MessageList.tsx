@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Bot, Check, Copy, FileText, Pencil, RefreshCw, User } from 'lucide-react'
 import type { ChatMessage } from '../ErasmusChatWorkspace.types'
+import { MessageContent } from './MessageContent'
 
 interface MessageBubbleProps {
   message: ChatMessage
@@ -78,7 +79,7 @@ export function MessageBubble({
                 : 'text-sm leading-relaxed text-app-text'
             }
           >
-            {message.text}
+            <MessageContent text={message.text} markdown={!isUser} />
           </div>
         )}
         {isUser && message.status === 'sending' && (
