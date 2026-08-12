@@ -1,17 +1,35 @@
-import { Bot, FileText, RefreshCw, User } from 'lucide-react'
+import { useState } from 'react'
+import { Bot, Check, Copy, FileText, Pencil, RefreshCw, User } from 'lucide-react'
 import type { ChatMessage } from '../ErasmusChatWorkspace.types'
 
 interface MessageBubbleProps {
   message: ChatMessage
   agentName: string
+  isLastAssistant: boolean
+  isSending: boolean
   onRetry: (message: ChatMessage) => void
+  onCopy: (message: ChatMessage) => void
+  onRegenerate?: () => void
+  onEdit?: (message: ChatMessage) => void
+  copiedId: string | null
 }
 
-export function MessageBubble({ message, agentName, onRetry }: MessageBubbleProps) {
+export function MessageBubble({
+  message,
+  agentName,
+  isLastAssistant,
+  isSending,
+  onRetry,
+  onCopy,
+  onRegenerate,
+  onEdit,
+  copiedId,
+}: MessageBubbleProps) {
   const isUser = message.role === 'user'
+  const copied = copiedId === message.id
   return (
     <div
-      className={`flex items-start gap-3 py-2 ${isUser ? 'flex-row-reverse' : ''}`}
+      className={`group flex items-start gap-3 py-2 ${isUser ? 'flex-row-reverse' : ''}`}
     >
       <div
         aria-hidden="true"
@@ -76,6 +94,45 @@ export function MessageBubble({ message, agentName, onRetry }: MessageBubbleProp
             Retry
           </button>
         )}
+        {message.status !== 'error' && (message.text || isLastAssistant) && (
+          <div
+            className={`mt-1 flex items-center gap-0.5 ${
+              isUser ? 'justify-end' : ''
+            } opacity-100 sm:opacity-0 sm:group-hover:opacity-100`}
+          >
+            <button
+              type="button"
+              aria-label={copied ? 'Copied' : 'Copy message'}
+              onClick={() => onCopy(message)}
+              className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-[11px] text-app-text-dim hover:bg-app-panel-2 hover:text-app-text"
+            >
+              {copied ? <Check size={12} /> : <Copy size={12} />}
+              {copied ? 'Copied' : 'Copy'}
+            </button>
+            {isUser && onEdit && !isSending && (
+              <button
+                type="button"
+                aria-label="Edit and resend"
+                onClick={() => onEdit(message)}
+                className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-[11px] text-app-text-dim hover:bg-app-panel-2 hover:text-app-text"
+              >
+                <Pencil size={12} />
+                Edit
+              </button>
+            )}
+            {!isUser && isLastAssistant && onRegenerate && !isSending && (
+              <button
+                type="button"
+                aria-label="Regenerate response"
+                onClick={onRegenerate}
+                className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-[11px] text-app-text-dim hover:bg-app-panel-2 hover:text-app-text"
+              >
+                <RefreshCw size={12} />
+                Regenerate
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   )
@@ -87,6 +144,10 @@ interface MessageListProps {
   activeAgentName?: string
   isSending: boolean
   onRetry: (message: ChatMessage) => void
+  onCopy: (message: ChatMessage) => void
+  onRegenerate?: () => void
+  onEdit?: (message: ChatMessage) => void
+  copiedId: string | null
 }
 
 export function MessageList({
@@ -95,20 +156,40 @@ export function MessageList({
   activeAgentName,
   isSending,
   onRetry,
+  onCopy,
+  onRegenerate,
+  onEdit,
+  copiedId,
 }: MessageListProps) {
+  const lastAssistantIndex = [...messages]
+    .map((m, i) => ({ m, i }))
+    .reverse()
+    .find((entry) => entry.m.role === 'assistant')?.i
+
   return (
     <div aria-live="polite" className="mx-auto flex max-w-2xl flex-col gap-1">
       {messages.length === 0 ? (
         <p className="pt-14 text-center text-sm text-app-text-dim">
-          Ask {activeAgentName} about your Erasmus+ application to get started.
+          Tell me about your Erasmus+ project to get started. When you are ready, generate an
+          application draft from this chat.
         </p>
       ) : (
-        messages.map((message) => (
+        messages.map((message, index) => (
           <MessageBubble
             key={message.id}
             message={message}
-            agentName={agents.find((a) => a.id === message.agentId)?.name ?? 'Assistant'}
+            agentName={
+              agents.find((a) => a.id === message.agentId)?.name ??
+              activeAgentName ??
+              'Erasmus AI'
+            }
+            isLastAssistant={index === lastAssistantIndex}
+            isSending={isSending}
             onRetry={onRetry}
+            onCopy={onCopy}
+            onRegenerate={onRegenerate}
+            onEdit={onEdit}
+            copiedId={copiedId}
           />
         ))
       )}
@@ -119,4 +200,15 @@ export function MessageList({
       )}
     </div>
   )
+}
+
+export function useCopiedToast() {
+  const [copiedId, setCopiedId] = useState<string | null>(null)
+  return {
+    copiedId,
+    markCopied: (id: string) => {
+      setCopiedId(id)
+      window.setTimeout(() => setCopiedId((current) => (current === id ? null : current)), 1600)
+    },
+  }
 }

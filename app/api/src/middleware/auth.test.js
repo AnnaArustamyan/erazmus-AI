@@ -69,6 +69,20 @@ describe('verifyAuth', () => {
     expect(next).not.toHaveBeenCalled();
   });
 
+  it('accepts an httpOnly access cookie when the Authorization header is missing', async () => {
+    const user = { id: 'user-1', email: 'a@b.com' };
+    getUserMock.mockResolvedValue({ data: { user }, error: null });
+    const req = { headers: {}, cookies: { ea_access_token: 'cookie-token' } };
+    const res = createRes();
+    const next = vi.fn();
+
+    await verifyAuth(req, res, next);
+
+    expect(getUserMock).toHaveBeenCalledWith('cookie-token');
+    expect(req.user).toEqual(user);
+    expect(next).toHaveBeenCalledTimes(1);
+  });
+
   it('attaches req.user and req.userToken and calls next on a valid token', async () => {
     const user = { id: 'user-1', email: 'a@b.com' };
     getUserMock.mockResolvedValue({ data: { user }, error: null });

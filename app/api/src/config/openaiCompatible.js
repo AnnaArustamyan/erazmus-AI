@@ -23,6 +23,7 @@ export async function streamOpenAiCompatibleChat({
   onDelta,
   onUsage,
   providerLabel = 'AI provider',
+  signal,
 }) {
   if (!apiKey) {
     throw new Error(`${providerLabel} API key is not configured`);
@@ -46,6 +47,7 @@ export async function streamOpenAiCompatibleChat({
       Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify(body),
+    signal,
   });
 
   if (!response.ok || !response.body) {

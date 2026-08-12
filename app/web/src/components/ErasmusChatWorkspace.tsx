@@ -17,11 +17,10 @@ import type {
   PendingAttachment,
   ThemeMode,
 } from './ErasmusChatWorkspace.types'
-import { AgentTabList } from './chat/AgentTabs'
-import { DEFAULT_AGENTS, DEFAULT_TOKENS_PER_MESSAGE, formatTokens } from './chat/agents'
+import { DEFAULT_AGENT_ID, DEFAULT_AGENTS, DEFAULT_TOKENS_PER_MESSAGE, formatTokens } from './chat/agents'
 import { ChatComposer } from './chat/ChatComposer'
 import { HistorySection } from './chat/HistorySection'
-import { MessageList } from './chat/MessageList'
+import { MessageList, useCopiedToast } from './chat/MessageList'
 
 export { DEFAULT_AGENTS }
 
@@ -51,7 +50,6 @@ export function ErasmusChatWorkspace({
   tokensPerMessage = DEFAULT_TOKENS_PER_MESSAGE,
   sendMessage = defaultSendMessage,
   onThemeChange,
-  onAgentChange,
   onTokenBalanceChange,
   conversations,
   activeConversationId,
@@ -61,10 +59,11 @@ export function ErasmusChatWorkspace({
   uploadFile,
   onGenerateDocument,
   isGeneratingDocument = false,
+  enterToSend = true,
 }: ErasmusChatWorkspaceProps) {
   const [theme, setTheme] = useState<ThemeMode>(initialTheme)
-  const [activeAgentId, setActiveAgentId] = useState<AgentId>(
-    initialAgentId ?? agents[0]?.id ?? 'compliance',
+  const [activeAgentId] = useState<AgentId>(
+    initialAgentId ?? agents[0]?.id ?? DEFAULT_AGENT_ID,
   )
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages)
   const [draft, setDraft] = useState('')
@@ -76,9 +75,11 @@ export function ErasmusChatWorkspace({
   const [pendingAttachment, setPendingAttachment] = useState<PendingAttachment | null>(null)
   const [isUploadingAttachment, setIsUploadingAttachment] = useState(false)
   const [attachmentError, setAttachmentError] = useState<string | null>(null)
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null)
+  const { copiedId, markCopied } = useCopiedToast()
 
   const idCounter = useRef(0)
-  const tabRefs = useRef(new Map<AgentId, HTMLButtonElement | null>())
+  const abortRef = useRef<AbortController | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const composerId = useId()
   const errorId = useId()
@@ -117,42 +118,6 @@ export function ErasmusChatWorkspace({
     return `msg-${idCounter.current}`
   }, [])
 
-  const registerTabRef = useCallback((id: AgentId, el: HTMLButtonElement | null) => {
-    tabRefs.current.set(id, el)
-  }, [])
-
-  const handleSelectAgent = useCallback(
-    (id: AgentId) => {
-      setActiveAgentId(id)
-      onAgentChange?.(id)
-    },
-    [onAgentChange],
-  )
-
-  const handleTabKeyDown = useCallback(
-    (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
-      const lastIndex = agents.length - 1
-      let nextIndex: number | null = null
-
-      if (event.key === 'ArrowDown' || event.key === 'ArrowRight') {
-        nextIndex = index === lastIndex ? 0 : index + 1
-      } else if (event.key === 'ArrowUp' || event.key === 'ArrowLeft') {
-        nextIndex = index === 0 ? lastIndex : index - 1
-      } else if (event.key === 'Home') {
-        nextIndex = 0
-      } else if (event.key === 'End') {
-        nextIndex = lastIndex
-      }
-
-      if (nextIndex === null) return
-      event.preventDefault()
-      const nextAgent = agents[nextIndex]
-      handleSelectAgent(nextAgent.id)
-      tabRefs.current.get(nextAgent.id)?.focus()
-    },
-    [agents, handleSelectAgent],
-  )
-
   const handleThemeSelect = useCallback(
     (mode: ThemeMode) => {
       setTheme(mode)
@@ -181,9 +146,13 @@ export function ErasmusChatWorkspace({
       text: string,
       agentId: AgentId,
       attachment?: PendingAttachment,
+      extras?: { regenerate?: boolean; editMessageId?: string },
     ) => {
       setIsSending(true)
       setErrorMessage(null)
+
+      const controller = new AbortController()
+      abortRef.current = controller
 
       const assistantMessageId = nextMessageId()
       setMessages((prev) => [
@@ -200,7 +169,15 @@ export function ErasmusChatWorkspace({
 
       try {
         const replyText = await sendMessage(
-          { text, agentId, history: messages, attachment },
+          {
+            text,
+            agentId,
+            history: messages,
+            attachment,
+            regenerate: extras?.regenerate,
+            editMessageId: extras?.editMessageId,
+            signal: controller.signal,
+          },
           (chunk) => {
             setMessages((prev) =>
               prev.map((m) =>
@@ -212,24 +189,33 @@ export function ErasmusChatWorkspace({
         setMessages((prev) =>
           prev.map((m) =>
             m.id === assistantMessageId
-              ? { ...m, text: replyText, status: 'sent' as const }
+              ? { ...m, text: replyText || m.text, status: 'sent' as const }
               : m,
           ),
         )
         updateTokenUsage()
       } catch (error) {
-        console.error('[chat] sendMessage failed', error)
-        setMessages((prev) =>
-          prev
-            .filter((m) => m.id !== assistantMessageId)
-            .map((m) => (m.id === userMessageId ? { ...m, status: 'error' as const } : m)),
-        )
-        setErrorMessage(
-          error instanceof Error
-            ? error.message
-            : 'Something went wrong while sending your message. Please try again.',
-        )
+        if (controller.signal.aborted) {
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === assistantMessageId ? { ...m, status: 'sent' as const } : m,
+            ),
+          )
+        } else {
+          console.error('[chat] sendMessage failed', error)
+          setMessages((prev) =>
+            prev
+              .filter((m) => m.id !== assistantMessageId)
+              .map((m) => (m.id === userMessageId ? { ...m, status: 'error' as const } : m)),
+          )
+          setErrorMessage(
+            error instanceof Error
+              ? error.message
+              : 'Something went wrong while sending your message. Please try again.',
+          )
+        }
       } finally {
+        abortRef.current = null
         setIsSending(false)
       }
     },
@@ -238,11 +224,37 @@ export function ErasmusChatWorkspace({
 
   const handleSend = useCallback(() => {
     const text = draft.trim()
-    if ((!text && !pendingAttachment) || isSending || isExhausted || isUploadingAttachment) {
+    if ((!text && !pendingAttachment && !editingMessageId) || isSending || isExhausted || isUploadingAttachment) {
       return
     }
 
     const attachment = pendingAttachment ?? undefined
+
+    if (editingMessageId) {
+      const editId = editingMessageId
+      setMessages((prev) => {
+        const idx = prev.findIndex((m) => m.id === editId)
+        if (idx < 0) return prev
+        return prev.slice(0, idx + 1).map((m) =>
+          m.id === editId
+            ? {
+                ...m,
+                text,
+                status: 'sending' as const,
+                attachment: attachment
+                  ? { name: attachment.name, path: attachment.path }
+                  : m.attachment,
+              }
+            : m,
+        )
+      })
+      setDraft('')
+      setPendingAttachment(null)
+      setEditingMessageId(null)
+      void dispatch(editId, text, activeAgentId, attachment, { editMessageId: editId })
+      return
+    }
+
     const userMessage: ChatMessage = {
       id: nextMessageId(),
       role: 'user',
@@ -259,6 +271,7 @@ export function ErasmusChatWorkspace({
   }, [
     draft,
     pendingAttachment,
+    editingMessageId,
     isSending,
     isExhausted,
     isUploadingAttachment,
@@ -292,12 +305,51 @@ export function ErasmusChatWorkspace({
   const handleComposerKeyDown = useCallback(
     (event: KeyboardEvent<HTMLTextAreaElement>) => {
       if (event.key === 'Enter' && !event.shiftKey) {
+        if (!enterToSend) return
         event.preventDefault()
         handleSend()
       }
     },
-    [handleSend],
+    [handleSend, enterToSend],
   )
+
+  const handleStop = useCallback(() => {
+    abortRef.current?.abort()
+  }, [])
+
+  const handleCopy = useCallback(
+    async (message: ChatMessage) => {
+      try {
+        await navigator.clipboard.writeText(message.text)
+        markCopied(message.id)
+      } catch (err) {
+        console.error('[chat] copy failed', err)
+        setErrorMessage('Could not copy to clipboard.')
+      }
+    },
+    [markCopied],
+  )
+
+  const handleEdit = useCallback((message: ChatMessage) => {
+    setEditingMessageId(message.id)
+    setDraft(message.text)
+    setErrorMessage(null)
+  }, [])
+
+  const handleRegenerate = useCallback(() => {
+    if (isSending || isExhausted) return
+    const lastUser = [...messages].reverse().find((m) => m.role === 'user')
+    if (!lastUser) return
+    setMessages((prev) => {
+      const lastAssistant = [...prev].reverse().find((m) => m.role === 'assistant')
+      if (!lastAssistant) return prev
+      return prev.filter((m) => m.id !== lastAssistant.id)
+    })
+    const attachment = lastUser.attachment?.path
+      ? { path: lastUser.attachment.path, name: lastUser.attachment.name }
+      : undefined
+    void dispatch(lastUser.id, lastUser.text, lastUser.agentId, attachment, { regenerate: true })
+  }, [isSending, isExhausted, messages, dispatch])
 
   const handleAttachClick = useCallback(() => {
     fileInputRef.current?.click()
@@ -385,14 +437,6 @@ export function ErasmusChatWorkspace({
           )}
         </div>
 
-        <AgentTabList
-          agents={agents}
-          activeAgentId={activeAgentId}
-          onSelect={handleSelectAgent}
-          registerRef={registerTabRef}
-          onKeyDown={handleTabKeyDown}
-        />
-
         {conversations !== undefined && (
           <HistorySection
             conversations={conversations}
@@ -465,8 +509,8 @@ export function ErasmusChatWorkspace({
 
         <div
           id="erasmus-chat-panel"
-          role="tabpanel"
-          aria-labelledby={`agent-tab-${activeAgentId}`}
+          role="region"
+          aria-label="Conversation"
           className="flex-1 overflow-y-auto px-5 py-4"
         >
           <MessageList
@@ -475,9 +519,28 @@ export function ErasmusChatWorkspace({
             activeAgentName={activeAgent?.name}
             isSending={isSending}
             onRetry={handleRetry}
+            onCopy={(message) => void handleCopy(message)}
+            onRegenerate={handleRegenerate}
+            onEdit={handleEdit}
+            copiedId={copiedId}
           />
         </div>
 
+        {editingMessageId && (
+          <div className="mx-auto mb-1 flex max-w-2xl items-center justify-between px-5 text-xs text-app-text-dim">
+            <span>Editing a previous message — send to replace everything after it.</span>
+            <button
+              type="button"
+              className="underline underline-offset-2"
+              onClick={() => {
+                setEditingMessageId(null)
+                setDraft('')
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        )}
         <ChatComposer
           composerId={composerId}
           errorId={errorId}
@@ -499,6 +562,7 @@ export function ErasmusChatWorkspace({
           fileInputRef={fileInputRef}
           onAttachClick={handleAttachClick}
           onFileSelected={handleFileSelected}
+          onStop={handleStop}
         />
       </div>
     </div>

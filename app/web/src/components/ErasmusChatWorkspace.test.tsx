@@ -1,11 +1,8 @@
 import type { ComponentProps } from 'react'
 import { describe, it, expect, vi } from 'vitest'
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import {
-  ErasmusChatWorkspace,
-  DEFAULT_AGENTS,
-} from './ErasmusChatWorkspace'
+import { ErasmusChatWorkspace } from './ErasmusChatWorkspace'
 import type { ConversationSummary, SendMessageFn } from './ErasmusChatWorkspace.types'
 
 function createDeferred<T>() {
@@ -25,30 +22,17 @@ function renderWorkspace(
 }
 
 describe('ErasmusChatWorkspace — rendering', () => {
-  it('renders the brand, all four agent tabs, and marks the first agent active', () => {
+  it('renders the brand and does not show specialist agent tabs', () => {
     renderWorkspace()
 
-    expect(screen.getByText('Erasmus AI')).toBeInTheDocument()
-
-    const tabs = screen.getAllByRole('tab')
-    expect(tabs).toHaveLength(4)
-    expect(tabs.map((tab) => tab.textContent)).toEqual(
-      DEFAULT_AGENTS.map((agent) => agent.name),
-    )
-
-    expect(tabs[0]).toHaveAttribute('aria-selected', 'true')
-    expect(tabs[0]).toHaveAttribute('tabindex', '0')
-    tabs.slice(1).forEach((tab) => {
-      expect(tab).toHaveAttribute('aria-selected', 'false')
-      expect(tab).toHaveAttribute('tabindex', '-1')
-    })
+    expect(screen.getByText('Grant Workspace')).toBeInTheDocument()
+    expect(screen.queryByRole('tablist', { name: /specialized ai agents/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('tab')).not.toBeInTheDocument()
   })
 
-  it('renders the active agent pill matching the default agent', () => {
+  it('renders the grant assistant pill', () => {
     renderWorkspace()
-    expect(screen.getByTestId('active-agent-pill')).toHaveTextContent(
-      'Compliance Officer',
-    )
+    expect(screen.getByTestId('active-agent-pill')).toHaveTextContent('Erasmus AI')
   })
 
   it('renders the token balance with progressbar and formatted counts', () => {
@@ -78,7 +62,7 @@ describe('ErasmusChatWorkspace — rendering', () => {
   it('renders the composer and a disabled send button when the draft is empty', () => {
     renderWorkspace()
     expect(
-      screen.getByRole('textbox', { name: /message compliance officer/i }),
+      screen.getByRole('textbox', { name: /message erasmus ai/i }),
     ).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /send message/i })).toBeDisabled()
   })
@@ -86,55 +70,8 @@ describe('ErasmusChatWorkspace — rendering', () => {
   it('renders an empty-state prompt when there are no messages', () => {
     renderWorkspace()
     expect(
-      screen.getByText(/ask compliance officer about your erasmus\+ application/i),
+      screen.getByText(/tell me about your erasmus\+ project/i),
     ).toBeInTheDocument()
-  })
-})
-
-describe('ErasmusChatWorkspace — agent switching', () => {
-  it('switches the active agent on click and notifies onAgentChange', async () => {
-    const user = userEvent.setup()
-    const onAgentChange = vi.fn()
-    renderWorkspace({ onAgentChange })
-
-    await user.click(screen.getByRole('tab', { name: 'Budget Agent' }))
-
-    expect(onAgentChange).toHaveBeenCalledWith('budget')
-    expect(screen.getByRole('tab', { name: 'Budget Agent' })).toHaveAttribute(
-      'aria-selected',
-      'true',
-    )
-    expect(screen.getByRole('tab', { name: 'Compliance Officer' })).toHaveAttribute(
-      'aria-selected',
-      'false',
-    )
-    expect(screen.getByTestId('active-agent-pill')).toHaveTextContent('Budget Agent')
-    expect(
-      screen.getByRole('textbox', { name: /message budget agent/i }),
-    ).toBeInTheDocument()
-  })
-
-  it('navigates and selects tabs with arrow keys, wrapping at the edges', () => {
-    renderWorkspace()
-    const tabs = screen.getAllByRole('tab')
-
-    tabs[0].focus()
-    expect(tabs[0]).toHaveFocus()
-
-    fireEvent.keyDown(tabs[0], { key: 'ArrowDown' })
-    expect(tabs[1]).toHaveFocus()
-    expect(tabs[1]).toHaveAttribute('aria-selected', 'true')
-
-    fireEvent.keyDown(tabs[1], { key: 'End' })
-    expect(tabs[3]).toHaveFocus()
-    expect(tabs[3]).toHaveAttribute('aria-selected', 'true')
-
-    fireEvent.keyDown(tabs[3], { key: 'ArrowRight' })
-    expect(tabs[0]).toHaveFocus()
-    expect(tabs[0]).toHaveAttribute('aria-selected', 'true')
-
-    fireEvent.keyDown(tabs[0], { key: 'Home' })
-    expect(tabs[0]).toHaveFocus()
   })
 })
 
@@ -147,7 +84,7 @@ describe('ErasmusChatWorkspace — message dispatching', () => {
 
     renderWorkspace({ sendMessage, onTokenBalanceChange })
 
-    const textbox = screen.getByRole('textbox', { name: /message compliance officer/i })
+    const textbox = screen.getByRole('textbox', { name: /message erasmus ai/i })
     await user.type(textbox, 'What are the eligible countries for KA2?')
     await user.click(screen.getByRole('button', { name: /send message/i }))
 
@@ -155,12 +92,12 @@ describe('ErasmusChatWorkspace — message dispatching', () => {
       screen.getByText('What are the eligible countries for KA2?'),
     ).toBeInTheDocument()
     expect(textbox).toHaveValue('')
-    expect(screen.getByRole('button', { name: /send message/i })).toBeDisabled()
-    expect(screen.getByText(/compliance officer is thinking/i)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /stop generating/i })).toBeInTheDocument()
+    expect(screen.getByText(/erasmus ai is thinking/i)).toBeInTheDocument()
     expect(sendMessage).toHaveBeenCalledWith(
       expect.objectContaining({
         text: 'What are the eligible countries for KA2?',
-        agentId: 'compliance',
+        agentId: 'grant',
       }),
       expect.any(Function),
     )
@@ -170,7 +107,7 @@ describe('ErasmusChatWorkspace — message dispatching', () => {
     expect(
       await screen.findByText('Here are the eligible KA2 countries…'),
     ).toBeInTheDocument()
-    expect(screen.queryByText(/compliance officer is thinking/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/erasmus ai is thinking/i)).not.toBeInTheDocument()
     expect(screen.getByRole('group', { name: /token balance/i })).toHaveTextContent(
       '500 / 3,000,000',
     )
@@ -182,7 +119,7 @@ describe('ErasmusChatWorkspace — message dispatching', () => {
     const sendMessage = vi.fn<SendMessageFn>().mockResolvedValue('ok')
     renderWorkspace({ sendMessage })
 
-    const textbox = screen.getByRole('textbox', { name: /message compliance officer/i })
+    const textbox = screen.getByRole('textbox', { name: /message erasmus ai/i })
     await user.type(textbox, 'line one{Shift>}{Enter}{/Shift}line two')
     expect(textbox).toHaveValue('line one\nline two')
     expect(sendMessage).not.toHaveBeenCalled()
@@ -200,14 +137,14 @@ describe('ErasmusChatWorkspace — message dispatching', () => {
     const sendButton = screen.getByRole('button', { name: /send message/i })
     expect(sendButton).toBeDisabled()
 
-    const textbox = screen.getByRole('textbox', { name: /message compliance officer/i })
+    const textbox = screen.getByRole('textbox', { name: /message erasmus ai/i })
     await user.type(textbox, '   ')
     expect(sendButton).toBeDisabled()
 
     await user.type(textbox, '{Enter}')
     expect(sendMessage).not.toHaveBeenCalled()
     expect(
-      screen.getByText(/ask compliance officer about your erasmus\+ application/i),
+      screen.getByText(/tell me about your erasmus\+ project/i),
     ).toBeInTheDocument()
   })
 
@@ -220,7 +157,7 @@ describe('ErasmusChatWorkspace — message dispatching', () => {
 
     renderWorkspace({ sendMessage })
 
-    const textbox = screen.getByRole('textbox', { name: /message compliance officer/i })
+    const textbox = screen.getByRole('textbox', { name: /message erasmus ai/i })
     await user.type(textbox, 'Check section D please')
     await user.click(screen.getByRole('button', { name: /send message/i }))
 
@@ -259,7 +196,7 @@ describe('ErasmusChatWorkspace — streaming', () => {
 
     renderWorkspace({ sendMessage })
 
-    const textbox = screen.getByRole('textbox', { name: /message compliance officer/i })
+    const textbox = screen.getByRole('textbox', { name: /message erasmus ai/i })
     await user.type(textbox, 'Stream this please')
     await user.click(screen.getByRole('button', { name: /send message/i }))
 
@@ -277,7 +214,7 @@ describe('ErasmusChatWorkspace — streaming', () => {
 
     renderWorkspace({ sendMessage })
 
-    const textbox = screen.getByRole('textbox', { name: /message compliance officer/i })
+    const textbox = screen.getByRole('textbox', { name: /message erasmus ai/i })
     await user.type(textbox, 'Will this fail?')
     await user.click(screen.getByRole('button', { name: /send message/i }))
 
@@ -336,7 +273,7 @@ describe('ErasmusChatWorkspace — attachments', () => {
     expect(await screen.findByText('plan.pdf')).toBeInTheDocument()
 
     await user.type(
-      screen.getByRole('textbox', { name: /message compliance officer/i }),
+      screen.getByRole('textbox', { name: /message erasmus ai/i }),
       'Review this please',
     )
     await user.click(screen.getByRole('button', { name: /send message/i }))
@@ -349,7 +286,7 @@ describe('ErasmusChatWorkspace — attachments', () => {
       expect.any(Function),
     )
     // Chip now belongs to the sent message, not the (cleared) composer.
-    const composerForm = screen.getByRole('textbox', { name: /message compliance officer/i }).closest('form')
+    const composerForm = screen.getByRole('textbox', { name: /message erasmus ai/i }).closest('form')
     expect(within(composerForm as HTMLElement).queryByText('plan.pdf')).not.toBeInTheDocument()
     expect(screen.getByText('plan.pdf')).toBeInTheDocument()
   })
@@ -387,7 +324,7 @@ describe('ErasmusChatWorkspace — token exhaustion guard', () => {
       tokenBalance: { used: 100_000, limit: 100_000 },
     })
 
-    const textbox = screen.getByRole('textbox', { name: /message compliance officer/i })
+    const textbox = screen.getByRole('textbox', { name: /message erasmus ai/i })
     expect(textbox).toBeDisabled()
     expect(textbox).toHaveAttribute(
       'placeholder',
@@ -503,5 +440,122 @@ describe('ErasmusChatWorkspace — conversation history', () => {
 
     await user.click(screen.getByRole('button', { name: /new chat/i }))
     expect(onNewChat).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('ErasmusChatWorkspace — message actions', () => {
+  const SEEDED = [
+    {
+      id: 'u1',
+      role: 'user' as const,
+      agentId: 'compliance' as const,
+      text: 'Draft the needs analysis',
+      createdAt: 1,
+      status: 'sent' as const,
+    },
+    {
+      id: 'a1',
+      role: 'assistant' as const,
+      agentId: 'compliance' as const,
+      text: 'Here is a generic draft.',
+      createdAt: 2,
+      status: 'sent' as const,
+    },
+  ]
+
+  it('copies an assistant message and shows Copied', async () => {
+    const user = userEvent.setup()
+    renderWorkspace({ initialMessages: SEEDED })
+
+    const copyButtons = screen.getAllByRole('button', { name: /copy message/i })
+    await user.click(copyButtons[copyButtons.length - 1])
+    expect(screen.getByRole('button', { name: /copied/i })).toBeInTheDocument()
+  })
+
+  it('regenerates the last assistant reply', async () => {
+    const user = userEvent.setup()
+    const sendMessage = vi.fn<SendMessageFn>().mockResolvedValue('Revised under pass rules.')
+    renderWorkspace({ initialMessages: SEEDED, sendMessage })
+
+    await user.click(screen.getByRole('button', { name: /regenerate response/i }))
+
+    expect(sendMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        text: 'Draft the needs analysis',
+        regenerate: true,
+      }),
+      expect.any(Function),
+    )
+    expect(await screen.findByText('Revised under pass rules.')).toBeInTheDocument()
+    expect(screen.queryByText('Here is a generic draft.')).not.toBeInTheDocument()
+  })
+
+  it('edits a user message, drops trailing turns, and resends', async () => {
+    const user = userEvent.setup()
+    const sendMessage = vi.fn<SendMessageFn>().mockResolvedValue('New reply')
+    renderWorkspace({
+      initialMessages: [
+        ...SEEDED,
+        {
+          id: 'u2',
+          role: 'user',
+          agentId: 'compliance',
+          text: 'Add partners',
+          createdAt: 3,
+          status: 'sent',
+        },
+        {
+          id: 'a2',
+          role: 'assistant',
+          agentId: 'compliance',
+          text: 'Partners section…',
+          createdAt: 4,
+          status: 'sent',
+        },
+      ],
+      sendMessage,
+    })
+
+    await user.click(screen.getAllByRole('button', { name: /edit and resend/i })[0])
+    const textbox = screen.getByRole('textbox', { name: /message erasmus ai/i })
+    expect(textbox).toHaveValue('Draft the needs analysis')
+    await user.clear(textbox)
+    await user.type(textbox, 'Rewrite needs with worker surveys')
+    await user.click(screen.getByRole('button', { name: /send message/i }))
+
+    expect(sendMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        text: 'Rewrite needs with worker surveys',
+        editMessageId: 'u1',
+      }),
+      expect.any(Function),
+    )
+    expect(screen.queryByText('Add partners')).not.toBeInTheDocument()
+    expect(screen.queryByText('Partners section…')).not.toBeInTheDocument()
+    expect(await screen.findByText('New reply')).toBeInTheDocument()
+  })
+
+  it('stops generation and keeps partial text', async () => {
+    const user = userEvent.setup()
+    const deferred = createDeferred<string>()
+    const sendMessage = vi.fn<SendMessageFn>((params, onDelta) => {
+      onDelta?.('Partial draft')
+      params.signal?.addEventListener('abort', () => {
+        deferred.resolve('Partial draft')
+      })
+      return deferred.promise
+    })
+    renderWorkspace({ sendMessage })
+
+    await user.type(
+      screen.getByRole('textbox', { name: /message erasmus ai/i }),
+      'Write the impact section',
+    )
+    await user.click(screen.getByRole('button', { name: /send message/i }))
+    expect(await screen.findByText('Partial draft')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /stop generating/i }))
+    expect(await screen.findByText('Partial draft')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /stop generating/i })).not.toBeInTheDocument()
   })
 })

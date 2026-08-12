@@ -3,6 +3,12 @@ import { vi } from 'vitest';
 const CHAIN_METHODS = [
   'select',
   'eq',
+  'neq',
+  'gt',
+  'gte',
+  'lt',
+  'lte',
+  'in',
   'order',
   'limit',
   'single',

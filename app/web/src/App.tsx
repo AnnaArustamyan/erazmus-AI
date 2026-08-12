@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { BrowserRouter, Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './auth/AuthContext'
 import { LoginScreen } from './components/LoginScreen'
 import { ErasmusChatWorkspace } from './components/ErasmusChatWorkspace'
@@ -23,26 +24,79 @@ import type {
   ConversationSummary,
   ThemeMode,
 } from './components/ErasmusChatWorkspace.types'
+import { DEFAULT_AGENT_ID } from './components/chat/agents'
+import {
+  loadActiveConversationId,
+  loadPreferences,
+  saveActiveConversationId,
+  savePreferences,
+  type UserPreferences,
+} from './preferences'
+import { SettingsLayout } from './pages/settings/SettingsLayout'
+import { ProfilePage } from './pages/settings/ProfilePage'
+import { PreferencesPage } from './pages/settings/PreferencesPage'
+import { UsagePage } from './pages/settings/UsagePage'
+import { SecurityPage } from './pages/settings/SecurityPage'
+import { DocumentsPage } from './pages/settings/DocumentsPage'
 
 function toSummary(c: ApiConversationSummary): ConversationSummary {
   return { id: c.id, agentId: c.agentId, title: c.title ?? '' }
 }
 
-function Workspace({
+function AppHeader({
+  theme,
+  preferences,
+}: {
+  theme: ThemeMode
+  preferences: UserPreferences
+}) {
+  const { user, profile, logout } = useAuth()
+  const navigate = useNavigate()
+
+  return (
+    <div className="flex shrink-0 items-center justify-between gap-3 border-b border-app-border bg-app-panel px-4 py-1.5">
+      <button
+        type="button"
+        onClick={() => navigate('/')}
+        className="min-w-0 truncate text-left text-xs text-app-text-dim hover:text-app-text"
+      >
+        {profile?.features?.canGenerateDocuments
+          ? 'Chat, then generate an application draft under Erasmus+ pass rules'
+          : 'Standard AI chat. Upgrade for a stronger pass-rate model and higher limits.'}
+      </button>
+      <ProfileMenu
+        name={profile?.name ?? null}
+        email={profile?.email ?? user?.email ?? ''}
+        plan={profile?.plan ?? 'free'}
+        tokensUsed={profile?.tokensUsed ?? 0}
+        tokenLimit={profile?.monthlyTokenLimit ?? 20_000}
+        aiTier={profile?.features?.aiTier ?? 'standard'}
+        onSignOut={() => void logout()}
+      />
+      <span className="sr-only" data-theme={theme}>
+        {preferences.theme}
+      </span>
+    </div>
+  )
+}
+
+function ChatWorkspace({
   theme,
   onThemeChange,
+  enterToSend,
 }: {
   theme: ThemeMode
   onThemeChange: (theme: ThemeMode) => void
+  enterToSend: boolean
 }) {
-  const { user, accessToken, profile, logout, setProfileTokensUsed } = useAuth()
+  const { accessToken, profile, setProfileTokensUsed } = useAuth()
   const tokenRef = useRef(accessToken)
   tokenRef.current = accessToken
 
   const [conversations, setConversations] = useState<ConversationSummary[]>([])
   const [activeConversationId, setActiveConversationId] = useState<string | undefined>()
   const [threadMessages, setThreadMessages] = useState<ChatMessage[]>([])
-  const [threadAgentId, setThreadAgentId] = useState<AgentId>('compliance')
+  const [threadAgentId, setThreadAgentId] = useState<AgentId>(DEFAULT_AGENT_ID)
   const [isLoadingThread, setIsLoadingThread] = useState(true)
   const [threadError, setThreadError] = useState<string | null>(null)
   const [workspaceKey, setWorkspaceKey] = useState(0)
@@ -83,7 +137,7 @@ function Workspace({
         const messages: ChatMessage[] = rows.map((row) => ({
           id: row.id,
           role: row.role,
-          agentId: row.agentId ?? 'compliance',
+          agentId: row.agentId ?? DEFAULT_AGENT_ID,
           text: row.content,
           createdAt: new Date(row.createdAt).getTime(),
           status: 'sent',
@@ -91,12 +145,14 @@ function Workspace({
         }))
         const lastAgentId = [...rows].reverse().find((row) => row.agentId)?.agentId
         setThreadMessages(messages)
-        setThreadAgentId(lastAgentId ?? 'compliance')
+        setThreadAgentId(lastAgentId ?? DEFAULT_AGENT_ID)
         setActiveConversationId(id)
+        saveActiveConversationId(id)
       } else {
         setThreadMessages([])
-        setThreadAgentId('compliance')
+        setThreadAgentId(DEFAULT_AGENT_ID)
         setActiveConversationId(undefined)
+        saveActiveConversationId(undefined)
       }
       setWorkspaceKey((key) => key + 1)
     } catch (err) {
@@ -117,7 +173,11 @@ function Workspace({
       })
       if (cancelled) return
       setConversations(list.map(toSummary))
-      await openConversation(list[0]?.id)
+      const remembered = loadActiveConversationId()
+      const initialId =
+        (remembered && list.some((c) => c.id === remembered) ? remembered : undefined) ??
+        list[0]?.id
+      await openConversation(initialId)
       await refreshDocuments()
     })()
     return () => {
@@ -189,6 +249,7 @@ function Workspace({
         initialConversationId: activeConversationId,
         onConversationChange: (id) => {
           setActiveConversationId(id)
+          saveActiveConversationId(id)
           void refreshConversations()
         },
       }),
@@ -196,24 +257,13 @@ function Workspace({
   )
 
   return (
-    <div data-theme={theme} className="flex h-screen flex-col bg-app-bg">
-      <div className="flex shrink-0 items-center justify-between gap-3 border-b border-app-border bg-app-panel px-4 py-1.5">
-        <div className="min-w-0 truncate text-xs text-app-text-dim">
-          {profile?.features?.canGenerateDocuments
-            ? documents.length > 0
-              ? `${documents.length} saved application document${documents.length === 1 ? '' : 's'}`
-              : 'Chat with agents, then generate an application document'
-            : 'Free plan: Standard AI chat. Upgrade for Advanced AI + document export.'}
-        </div>
-        <ProfileMenu
-          name={profile?.name ?? null}
-          email={profile?.email ?? user?.email ?? ''}
-          plan={profile?.plan ?? 'free'}
-          tokensUsed={profile?.tokensUsed ?? 0}
-          tokenLimit={profile?.monthlyTokenLimit ?? 20_000}
-          aiTier={profile?.features?.aiTier ?? 'standard'}
-          onSignOut={() => void logout()}
-        />
+    <>
+      <div className="min-w-0 truncate px-4 py-1 text-[11px] text-app-text-dim">
+        {documents.length > 0
+          ? `${documents.length} saved application document${documents.length === 1 ? '' : 's'}`
+          : profile?.plan === 'free'
+            ? 'Free plan: Standard AI + 3 drafts/month. Upgrade for Advanced AI and higher limits.'
+            : 'Chat with agents, then generate an application document'}
       </div>
       {latestDocument && (
         <div className="shrink-0 border-b border-app-border bg-app-panel-2 px-4 py-2 text-xs text-app-text">
@@ -265,15 +315,14 @@ function Workspace({
               initialAgentId={threadAgentId}
               initialTheme={theme}
               onThemeChange={onThemeChange}
+              enterToSend={enterToSend}
               conversations={conversations}
               activeConversationId={activeConversationId}
               onNewChat={handleNewChat}
               onSelectConversation={handleSelectConversation}
               onDeleteConversation={(id) => void handleDeleteConversation(id)}
               uploadFile={handleUploadFile}
-              onGenerateDocument={
-                profile?.features?.canGenerateDocuments ? handleGenerateDocument : undefined
-              }
+              onGenerateDocument={handleGenerateDocument}
               isGeneratingDocument={isGeneratingDocument}
               tokenBalance={
                 profile
@@ -285,25 +334,110 @@ function Workspace({
           </>
         )}
       </div>
+    </>
+  )
+}
+
+function AuthenticatedApp({
+  theme,
+  onThemeChange,
+  preferences,
+  setPreferences,
+}: {
+  theme: ThemeMode
+  onThemeChange: (theme: ThemeMode) => void
+  preferences: UserPreferences
+  setPreferences: (next: UserPreferences) => void
+}) {
+  return (
+    <div data-theme={theme} className="flex h-screen flex-col bg-app-bg">
+      <AppHeader theme={theme} preferences={preferences} />
+      <div className="flex min-h-0 flex-1 flex-col">
+      <Routes>
+        <Route
+          path="/"
+          element={
+            <ChatWorkspace
+              theme={theme}
+              onThemeChange={onThemeChange}
+              enterToSend={preferences.enterToSend}
+            />
+          }
+        />
+        <Route path="/settings" element={<SettingsLayout />}>
+          <Route index element={<Navigate to="profile" replace />} />
+          <Route path="profile" element={<ProfilePage />} />
+          <Route
+            path="preferences"
+            element={
+              <PreferencesPage
+                preferences={preferences}
+                onChange={(next) => {
+                  setPreferences(next)
+                  onThemeChange(next.theme)
+                }}
+              />
+            }
+          />
+          <Route path="usage" element={<UsagePage />} />
+          <Route path="security" element={<SecurityPage />} />
+          <Route path="documents" element={<DocumentsPage />} />
+        </Route>
+      </Routes>
+      </div>
     </div>
   )
 }
 
 function AppShell() {
-  const { user } = useAuth()
-  const [theme, setTheme] = useState<ThemeMode>('dark')
+  const { user, isRestoring } = useAuth()
+  const [preferences, setPreferencesState] = useState<UserPreferences>(() => loadPreferences())
+  const theme = preferences.theme
 
-  if (!user) {
-    return <LoginScreen theme={theme} onThemeChange={setTheme} />
+  const setPreferences = useCallback((next: UserPreferences) => {
+    setPreferencesState(next)
+    savePreferences(next)
+  }, [])
+
+  const onThemeChange = useCallback(
+    (next: ThemeMode) => {
+      setPreferences({ ...loadPreferences(), theme: next })
+    },
+    [setPreferences],
+  )
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme)
+  }, [theme])
+
+  if (isRestoring) {
+    return (
+      <div data-theme={theme} className="flex h-screen items-center justify-center bg-app-bg text-sm text-app-text-dim">
+        Restoring your session…
+      </div>
+    )
   }
 
-  return <Workspace theme={theme} onThemeChange={setTheme} />
+  if (!user) {
+    return <LoginScreen theme={theme} onThemeChange={onThemeChange} />
+  }
+
+  return (
+    <AuthenticatedApp
+      theme={theme}
+      onThemeChange={onThemeChange}
+      preferences={preferences}
+      setPreferences={setPreferences}
+    />
+  )
 }
 
 function App() {
   return (
     <AuthProvider>
-      <AppShell />
+      <BrowserRouter>
+        <AppShell />
+      </BrowserRouter>
     </AuthProvider>
   )
 }

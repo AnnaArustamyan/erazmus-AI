@@ -8,18 +8,20 @@ import {
   type ReactNode,
 } from 'react'
 import {
+  changePassword as changePasswordRequest,
   fetchProfile,
+  loadStoredSession,
   loginAccount,
   logoutAccount,
+  persistSession,
   refreshSession,
   registerAccount,
+  updateProfileName,
   type AuthSession,
   type AuthUser,
   type UserProfile,
 } from '../api/authClient'
 
-// Refresh this long before the access token actually expires, so a slow
-// request never races an expiry that lands mid-flight.
 const REFRESH_MARGIN_MS = 60_000
 const MIN_REFRESH_DELAY_MS = 5_000
 
@@ -28,14 +30,16 @@ interface AuthContextValue {
   accessToken: string | null
   profile: UserProfile | null
   isAuthenticating: boolean
+  isRestoring: boolean
   error: string | null
   login: (email: string, password: string) => Promise<void>
   register: (email: string, password: string, name: string) => Promise<void>
   logout: () => Promise<void>
   clearError: () => void
   refreshProfile: () => Promise<void>
-  /** Cheap local sync after a chat response, instead of a full refetch. */
   setProfileTokensUsed: (tokensUsed: number) => void
+  saveProfileName: (name: string) => Promise<void>
+  changePassword: (currentPassword: string, newPassword: string) => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -44,14 +48,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<AuthSession | null>(null)
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [isAuthenticating, setIsAuthenticating] = useState(false)
+  const [isRestoring, setIsRestoring] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  const applySession = useCallback((next: AuthSession | null) => {
+    persistSession(next)
+    setSession(next)
+    if (!next) setProfile(null)
+  }, [])
 
   const login = useCallback(async (email: string, password: string) => {
     setIsAuthenticating(true)
     setError(null)
     try {
       const nextSession = await loginAccount({ email, password })
-      setSession(nextSession)
+      applySession(nextSession)
     } catch (err) {
       console.error('[auth] login failed', err)
       setError(err instanceof Error ? err.message : 'Login failed')
@@ -59,7 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsAuthenticating(false)
     }
-  }, [])
+  }, [applySession])
 
   const register = useCallback(async (email: string, password: string, name: string) => {
     setIsAuthenticating(true)
@@ -67,7 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await registerAccount({ email, password, name: name || undefined })
       const nextSession = await loginAccount({ email, password })
-      setSession(nextSession)
+      applySession(nextSession)
     } catch (err) {
       console.error('[auth] registration failed', err)
       setError(err instanceof Error ? err.message : 'Registration failed')
@@ -75,22 +86,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsAuthenticating(false)
     }
-  }, [])
+  }, [applySession])
 
   const logout = useCallback(async () => {
-    const token = session?.accessToken
-    setSession(null)
-    setProfile(null)
+    const token = session?.accessToken ?? null
+    applySession(null)
     if (token) {
       await logoutAccount(token).catch((err) => console.error('[auth] logout request failed', err))
     }
-  }, [session])
+  }, [session, applySession])
 
   const clearError = useCallback(() => setError(null), [])
 
   const refreshProfile = useCallback(async () => {
-    if (!session) return
-    const nextProfile = await fetchProfile(session.accessToken).catch((err) => {
+    const nextProfile = await fetchProfile(session?.accessToken).catch((err) => {
       console.error('[auth] refreshProfile failed', err)
       return null
     })
@@ -101,7 +110,53 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfile((prev) => (prev ? { ...prev, tokensUsed } : prev))
   }, [])
 
-  // Loads the profile (name, plan, token usage) once a session exists.
+  const saveProfileName = useCallback(
+    async (name: string) => {
+      const next = await updateProfileName(session?.accessToken ?? null, name)
+      setProfile(next)
+    },
+    [session],
+  )
+
+  const changePassword = useCallback(
+    async (currentPassword: string, newPassword: string) => {
+      await changePasswordRequest(session?.accessToken ?? null, currentPassword, newPassword)
+    },
+    [session],
+  )
+
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      try {
+        const stored = loadStoredSession()
+        const now = Date.now()
+        if (stored) {
+          const expired = stored.expiresAt * 1000 <= now + REFRESH_MARGIN_MS
+          const next = expired ? await refreshSession(stored.refreshToken) : stored
+          if (cancelled) return
+          applySession(next)
+          return
+        }
+        try {
+          await fetchProfile(null)
+          const next = await refreshSession()
+          if (!cancelled) applySession(next)
+        } catch {
+          if (!cancelled) applySession(null)
+        }
+      } catch (err) {
+        console.error('[auth] session restore failed', err)
+        if (!cancelled) applySession(null)
+      } finally {
+        if (!cancelled) setIsRestoring(false)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [applySession])
+
   useEffect(() => {
     if (!session) {
       setProfile(null)
@@ -113,7 +168,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!cancelled) setProfile(nextProfile)
       })
       .catch((err) => {
-        // Non-fatal: the workspace just falls back to default token display.
         console.error('[auth] failed to load profile', err)
       })
     return () => {
@@ -121,9 +175,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [session])
 
-  // Silently renews the session before the access token expires, so users
-  // aren't dropped back to the login screen after ~1h of activity. Each
-  // successful refresh reschedules itself off the new session's expiry.
   useEffect(() => {
     if (!session) return
 
@@ -132,15 +183,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const timer = window.setTimeout(() => {
       refreshSession(session.refreshToken)
-        .then(setSession)
+        .then((next) => applySession(next))
         .catch((err) => {
           console.error('[auth] silent session refresh failed, signing out', err)
-          setSession(null)
+          applySession(null)
         })
     }, delay)
 
     return () => window.clearTimeout(timer)
-  }, [session])
+  }, [session, applySession])
 
   const value = useMemo<AuthContextValue>(
     () => ({
@@ -148,6 +199,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       accessToken: session?.accessToken ?? null,
       profile,
       isAuthenticating,
+      isRestoring,
       error,
       login,
       register,
@@ -155,11 +207,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       clearError,
       refreshProfile,
       setProfileTokensUsed,
+      saveProfileName,
+      changePassword,
     }),
     [
       session,
       profile,
       isAuthenticating,
+      isRestoring,
       error,
       login,
       register,
@@ -167,6 +222,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       clearError,
       refreshProfile,
       setProfileTokensUsed,
+      saveProfileName,
+      changePassword,
     ],
   )
 

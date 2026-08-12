@@ -27,7 +27,7 @@ This folder is the source material for constrained Erasmus+ generation. Do not c
 
 ## How to use this pack in the product
 
-1. Inject `derived/rules.md` into **every** chat and document-generation system prompt (KA153 / youth-worker mobility).
+1. Inject `derived/rules.md` into **every** chat and document-generation system prompt (KA153 / youth-worker mobility). Implemented server-side in `app/api/src/lib/passRate.js` (`GUIDE_YEAR` = 2026).
 2. Retrieve relevant chunks from `derived/guide-youth-workers.md` (and later a chunked Guide index) for the user’s action.
 3. When writing or revising a section, retrieve matching failure modes from `derived/assessments/` (e.g. needs analysis, wrong beneficiary, APV).
 4. Do **not** dump full 50–60 page application PDFs or the full 456-page Guide into the model context.

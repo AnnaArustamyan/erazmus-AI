@@ -66,6 +66,7 @@ export async function streamChatForPlan({
   temperature,
   onDelta,
   onUsage,
+  signal,
 }) {
   const provider = resolveProviderForPlan(plan);
   if (!isProviderConfiguredForPlan(plan)) {
@@ -81,6 +82,7 @@ export async function streamChatForPlan({
     onDelta,
     onUsage,
     providerLabel: provider.label,
+    signal,
   });
 
   return provider;
@@ -88,7 +90,7 @@ export async function streamChatForPlan({
 
 /**
  * Non-streaming completion using the provider for the user's plan.
- * Document generation should only be called for paid plans.
+ * Free → Luna; paid → Moonshot. Same pass-rate prompts at the call site.
  */
 export async function completeChatForPlan({ plan, messages, temperature }) {
   const provider = resolveProviderForPlan(plan);

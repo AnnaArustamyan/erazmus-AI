@@ -1,14 +1,13 @@
 import { supabaseAdmin } from '../config/supabase.js';
+import { readAccessToken } from '../lib/sessionCookies.js';
 
 /**
- * Frontend logs in via Supabase Auth (supabase-js on the client) and gets a JWT.
- * Every request to our API must send it as: Authorization: Bearer <token>
- * This middleware verifies that token against Supabase and loads the user.
+ * Accepts Authorization: Bearer <access_token> or the httpOnly access cookie.
+ * Prefer cookies for the web app; Bearer remains for curl and tests.
  */
 export async function verifyAuth(req, res, next) {
   try {
-    const header = req.headers.authorization || '';
-    const token = header.startsWith('Bearer ') ? header.slice(7) : null;
+    const token = readAccessToken(req);
 
     if (!token) {
       return res.status(401).json({ error: 'Missing bearer token' });

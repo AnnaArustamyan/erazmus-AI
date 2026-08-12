@@ -4,7 +4,7 @@ import {
   type KeyboardEvent,
   type RefObject,
 } from 'react'
-import { AlertTriangle, FileText, Loader2, Paperclip, Send, X } from 'lucide-react'
+import { AlertTriangle, FileText, Loader2, Paperclip, Send, Square, X } from 'lucide-react'
 import type { PendingAttachment } from '../ErasmusChatWorkspace.types'
 
 interface ChatComposerProps {
@@ -28,6 +28,7 @@ interface ChatComposerProps {
   fileInputRef: RefObject<HTMLInputElement | null>
   onAttachClick: () => void
   onFileSelected: (event: ChangeEvent<HTMLInputElement>) => void
+  onStop?: () => void
 }
 
 export function ChatComposer({
@@ -51,6 +52,7 @@ export function ChatComposer({
   fileInputRef,
   onAttachClick,
   onFileSelected,
+  onStop,
 }: ChatComposerProps) {
   const isComposerDisabled = isExhausted
 
@@ -148,19 +150,30 @@ export function ChatComposer({
           ) : (
             <span />
           )}
-          <button
-            type="submit"
-            aria-label="Send message"
-            disabled={
-              isComposerDisabled ||
-              isSending ||
-              isUploadingAttachment ||
-              (!draft.trim() && !pendingAttachment)
-            }
-            className="flex h-8 w-8 items-center justify-center rounded-lg bg-app-text text-app-bg disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            <Send size={14} />
-          </button>
+          {isSending && onStop ? (
+            <button
+              type="button"
+              aria-label="Stop generating"
+              onClick={onStop}
+              className="flex h-8 w-8 items-center justify-center rounded-lg bg-app-text text-app-bg focus-visible:outline-2 focus-visible:outline-app-accent focus-visible:outline-offset-2"
+            >
+              <Square size={12} fill="currentColor" />
+            </button>
+          ) : (
+            <button
+              type="submit"
+              aria-label="Send message"
+              disabled={
+                isComposerDisabled ||
+                isSending ||
+                isUploadingAttachment ||
+                (!draft.trim() && !pendingAttachment)
+              }
+              className="flex h-8 w-8 items-center justify-center rounded-lg bg-app-text text-app-bg disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <Send size={14} />
+            </button>
+          )}
         </div>
       </form>
     </div>

@@ -12,6 +12,7 @@ const { supabaseAdminMock } = vi.hoisted(() => ({
         createUser: vi.fn(),
         deleteUser: vi.fn(),
         signOut: vi.fn(),
+        updateUserById: vi.fn(),
       },
     },
     storage: { from: vi.fn() },
@@ -211,7 +212,10 @@ describe('GET /api/auth/me', () => {
       tokens_used: 0,
       created_at: '2026-01-01T00:00:00.000Z',
     };
-    queueFromResults(supabaseAdminMock.from, [{ data: profile, error: null }]);
+    queueFromResults(supabaseAdminMock.from, [
+      { data: profile, error: null },
+      { data: null, error: null, count: 0 },
+    ]);
 
     const res = await request(app).get('/api/auth/me').set('Authorization', 'Bearer sometoken');
 
@@ -222,9 +226,92 @@ describe('GET /api/auth/me', () => {
       plan: 'free',
       aiTier: 'standard',
       provider: 'openai',
-      canGenerateDocuments: false,
+      canGenerateDocuments: true,
+      monthlyDocumentLimit: 3,
       canUseAdvancedAgents: true,
       monthlyTokenLimit: 20000,
+    });
+    expect(res.body.documents_used_this_month).toBe(0);
+    expect(res.body.guide_year).toBe(2026);
+  });
+});
+
+describe('PATCH /api/auth/me', () => {
+  it('updates the display name', async () => {
+    supabaseAdminMock.auth.getUser.mockResolvedValue({
+      data: { user: { id: 'u1', email: 'a@b.com' } },
+      error: null,
+    });
+    supabaseAdminMock.auth.admin.updateUserById.mockResolvedValue({ data: {}, error: null });
+    queueFromResults(supabaseAdminMock.from, [
+      { data: null, error: null },
+      {
+        data: {
+          id: 'u1',
+          email: 'a@b.com',
+          name: 'Ada',
+          plan: 'free',
+          monthly_token_limit: 20000,
+          tokens_used: 0,
+          created_at: '2026-01-01T00:00:00.000Z',
+        },
+        error: null,
+      },
+      { data: null, error: null, count: 1 },
+    ]);
+
+    const res = await request(app)
+      .patch('/api/auth/me')
+      .set('Authorization', 'Bearer t')
+      .send({ name: 'Ada' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.name).toBe('Ada');
+    expect(supabaseAdminMock.auth.admin.updateUserById).toHaveBeenCalledWith('u1', {
+      user_metadata: { name: 'Ada' },
+    });
+  });
+});
+
+describe('POST /api/auth/password', () => {
+  it('rejects a wrong current password', async () => {
+    supabaseAdminMock.auth.getUser.mockResolvedValue({
+      data: { user: { id: 'u1', email: 'a@b.com' } },
+      error: null,
+    });
+    supabaseAdminMock.auth.signInWithPassword.mockResolvedValue({
+      data: null,
+      error: { message: 'Invalid login credentials' },
+    });
+
+    const res = await request(app)
+      .post('/api/auth/password')
+      .set('Authorization', 'Bearer t')
+      .send({ currentPassword: 'wrong', newPassword: 'newpass1' });
+
+    expect(res.status).toBe(401);
+    expect(supabaseAdminMock.auth.admin.updateUserById).not.toHaveBeenCalled();
+  });
+
+  it('updates the password when the current one matches', async () => {
+    supabaseAdminMock.auth.getUser.mockResolvedValue({
+      data: { user: { id: 'u1', email: 'a@b.com' } },
+      error: null,
+    });
+    supabaseAdminMock.auth.signInWithPassword.mockResolvedValue({
+      data: { session: {}, user: { id: 'u1' } },
+      error: null,
+    });
+    supabaseAdminMock.auth.admin.updateUserById.mockResolvedValue({ data: {}, error: null });
+
+    const res = await request(app)
+      .post('/api/auth/password')
+      .set('Authorization', 'Bearer t')
+      .send({ currentPassword: 'oldpass1', newPassword: 'newpass1' });
+
+    expect(res.status).toBe(204);
+    expect(supabaseAdminMock.auth.admin.updateUserById).toHaveBeenCalledWith('u1', {
+      password: 'newpass1',
     });
   });
 });

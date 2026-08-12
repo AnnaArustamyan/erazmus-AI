@@ -3,7 +3,8 @@
  *
  * Free still costs us money (we pay OpenAI per token), so the free tier is
  * intentionally small: enough to try the product, not enough to run real
- * grant drafting for free.
+ * grant drafting for free. Document generation is available on every plan
+ * and gated by token quota + monthly document caps — never “Free cannot generate.”
  */
 
 export const PLANS = {
@@ -16,7 +17,8 @@ export const PLANS = {
     /** OpenAI GPT-5.6 Luna (ChatGPT Free–class / cheapest API tier) */
     aiTier: 'standard',
     maxHistoryMessages: 8,
-    canGenerateDocuments: false,
+    canGenerateDocuments: true,
+    monthlyDocumentLimit: 3,
     canUseAdvancedAgents: true,
   },
   basic: {
@@ -27,6 +29,7 @@ export const PLANS = {
     aiTier: 'advanced',
     maxHistoryMessages: 20,
     canGenerateDocuments: true,
+    monthlyDocumentLimit: 20,
     canUseAdvancedAgents: true,
   },
   pro: {
@@ -37,6 +40,7 @@ export const PLANS = {
     aiTier: 'advanced',
     maxHistoryMessages: 40,
     canGenerateDocuments: true,
+    monthlyDocumentLimit: 100,
     canUseAdvancedAgents: true,
   },
   enterprise: {
@@ -47,6 +51,7 @@ export const PLANS = {
     aiTier: 'advanced',
     maxHistoryMessages: 40,
     canGenerateDocuments: true,
+    monthlyDocumentLimit: 100,
     canUseAdvancedAgents: true,
   },
 };
@@ -69,7 +74,16 @@ export function planFeatures(plan) {
     aiTier: config.aiTier,
     provider: config.provider,
     canGenerateDocuments: config.canGenerateDocuments,
+    monthlyDocumentLimit: config.monthlyDocumentLimit,
     canUseAdvancedAgents: config.canUseAdvancedAgents,
     monthlyTokenLimit: config.monthlyTokenLimit,
   };
+}
+
+/**
+ * UTC start of the current calendar month (for monthly document caps).
+ * @param {Date} [now]
+ */
+export function startOfUtcMonth(now = new Date()) {
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0, 0));
 }

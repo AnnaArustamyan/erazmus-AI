@@ -43,7 +43,7 @@ create table if not exists public.conversations (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
   agent_id text not null check (
-    agent_id in ('compliance', 'budget', 'partner-search', 'report-writer')
+    agent_id in ('grant', 'compliance', 'budget', 'partner-search', 'report-writer')
   ),
   title text,
   created_at timestamptz not null default now(),
@@ -90,7 +90,7 @@ create policy "Users can view own messages"
 
 alter table public.messages
   add column if not exists agent_id text
-    check (agent_id in ('compliance', 'budget', 'partner-search', 'report-writer'));
+    check (agent_id in ('grant', 'compliance', 'budget', 'partner-search', 'report-writer'));
 
 
 -- ========== 004_attachments.sql ==========
@@ -180,4 +180,20 @@ update public.users
 set monthly_token_limit = 20000
 where plan = 'free'
   and monthly_token_limit = 100000;
+
+
+-- ========== 008_grant_agent.sql ==========
+
+alter table public.conversations drop constraint if exists conversations_agent_id_check;
+alter table public.conversations
+  add constraint conversations_agent_id_check
+  check (agent_id in ('grant', 'compliance', 'budget', 'partner-search', 'report-writer'));
+
+alter table public.messages drop constraint if exists messages_agent_id_check;
+alter table public.messages
+  add constraint messages_agent_id_check
+  check (
+    agent_id is null
+    or agent_id in ('grant', 'compliance', 'budget', 'partner-search', 'report-writer')
+  );
 

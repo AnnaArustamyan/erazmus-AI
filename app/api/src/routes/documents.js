@@ -5,10 +5,8 @@ import {
   isProviderConfiguredForPlan,
 } from '../services/aiProvider.js';
 import { supabaseAdmin } from '../config/supabase.js';
-import {
-  APPLICATION_DRAFT_SYSTEM_PROMPT,
-  emptyApplicationMarkdown,
-} from '../lib/applicationSchema.js';
+import { emptyApplicationMarkdown } from '../lib/applicationSchema.js';
+import { buildPassRateSystemPrompt } from '../lib/passRate.js';
 import { getPlanConfig } from '../lib/plans.js';
 import {
   createDocumentRecord,
@@ -16,25 +14,44 @@ import {
   getDocumentForUser,
   listDocumentsForUser,
 } from '../services/documents.js';
-import { applyTokenUsage, getUserQuota, isQuotaExhausted } from '../services/quota.js';
+import {
+  applyTokenUsage,
+  countDocumentsThisMonth,
+  documentCapError,
+  getUserQuota,
+  isQuotaExhausted,
+} from '../services/quota.js';
 
 const router = Router();
+
+async function assertCanGenerate(profile, userId) {
+  if (isQuotaExhausted(profile)) {
+    return { status: 402, error: 'Token quota exhausted. Upgrade your plan to continue.' };
+  }
+  const documentsThisMonth = await countDocumentsThisMonth(userId);
+  const capError = documentCapError(profile, documentsThisMonth);
+  if (capError) {
+    return { status: 403, error: capError };
+  }
+  return null;
+}
+
+function providerNotConfiguredError(plan) {
+  const needed = getPlanConfig(plan).provider === 'openai' ? 'OPENAI_API_KEY' : 'MOONSHOT_API_KEY';
+  return `AI provider is not configured for your plan. Set ${needed} on the server.`;
+}
 
 /**
  * POST /api/documents
  * body: { title?, contentMd, conversationId? }
- * Manual create still allowed for paid plans only (keeps free tier locked down).
+ * Available on all plans; gated by token quota + monthly document cap.
  */
 router.post('/', verifyAuth, async (req, res) => {
   const profile = await getUserQuota(req.user.id);
   if (!profile) return res.status(404).json({ error: 'Profile not found' });
 
-  const planConfig = getPlanConfig(profile.plan);
-  if (!planConfig.canGenerateDocuments) {
-    return res.status(403).json({
-      error: 'Document generation is available on Basic and Pro plans. Upgrade to continue.',
-    });
-  }
+  const blocked = await assertCanGenerate(profile, req.user.id);
+  if (blocked) return res.status(blocked.status).json({ error: blocked.error });
 
   const { title, contentMd, conversationId } = req.body ?? {};
   if (typeof contentMd !== 'string' || !contentMd.trim()) {
@@ -83,7 +100,7 @@ router.get('/', verifyAuth, async (req, res) => {
 /**
  * POST /api/documents/from-conversation
  * body: { conversationId, title? }
- * Paid plans only — uses Moonshot (advanced).
+ * All plans; Free → Luna, paid → Moonshot. Same pass-rate constraints.
  */
 router.post('/from-conversation', verifyAuth, async (req, res) => {
   const { conversationId, title } = req.body ?? {};
@@ -94,19 +111,12 @@ router.post('/from-conversation', verifyAuth, async (req, res) => {
   const profile = await getUserQuota(req.user.id);
   if (!profile) return res.status(404).json({ error: 'Profile not found' });
 
+  const blocked = await assertCanGenerate(profile, req.user.id);
+  if (blocked) return res.status(blocked.status).json({ error: blocked.error });
+
   const planConfig = getPlanConfig(profile.plan);
-  if (!planConfig.canGenerateDocuments) {
-    return res.status(403).json({
-      error: 'Document generation is available on Basic and Pro plans. Upgrade to continue.',
-    });
-  }
-  if (isQuotaExhausted(profile)) {
-    return res.status(402).json({ error: 'Token quota exhausted. Upgrade your plan to continue.' });
-  }
   if (!isProviderConfiguredForPlan(profile.plan)) {
-    return res.status(503).json({
-      error: 'AI provider is not configured for your plan. Set MOONSHOT_API_KEY on the server.',
-    });
+    return res.status(503).json({ error: providerNotConfiguredError(profile.plan) });
   }
 
   const { data: conversation, error: conversationError } = await supabaseAdmin
@@ -144,10 +154,16 @@ router.post('/from-conversation', verifyAuth, async (req, res) => {
     const result = await completeChatForPlan({
       plan: profile.plan,
       messages: [
-        { role: 'system', content: APPLICATION_DRAFT_SYSTEM_PROMPT },
+        {
+          role: 'system',
+          content: buildPassRateSystemPrompt({
+            queryText: transcript,
+            mode: 'document',
+          }),
+        },
         {
           role: 'user',
-          content: `Draft an Erasmus+ application from this conversation transcript:\n\n${transcript}`,
+          content: `Draft an Erasmus+ Mobility of youth workers application from this conversation transcript:\n\n${transcript}`,
         },
       ],
     });

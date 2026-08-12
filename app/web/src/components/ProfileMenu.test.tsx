@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router-dom'
 import { ProfileMenu } from './ProfileMenu'
 
 const BASE_PROPS = {
@@ -15,7 +16,11 @@ const BASE_PROPS = {
 
 describe('ProfileMenu', () => {
   it('renders a closed trigger button with initials', () => {
-    render(<ProfileMenu {...BASE_PROPS} />)
+    render(
+      <MemoryRouter>
+        <ProfileMenu {...BASE_PROPS} />
+      </MemoryRouter>,
+    )
     const trigger = screen.getByRole('button', { name: /profile menu/i })
     expect(trigger).toHaveTextContent('NG')
     expect(trigger).toHaveAttribute('aria-expanded', 'false')
@@ -24,7 +29,11 @@ describe('ProfileMenu', () => {
 
   it('opens on click and shows name, email, plan, and token usage', async () => {
     const user = userEvent.setup()
-    render(<ProfileMenu {...BASE_PROPS} />)
+    render(
+      <MemoryRouter>
+        <ProfileMenu {...BASE_PROPS} />
+      </MemoryRouter>,
+    )
 
     await user.click(screen.getByRole('button', { name: /profile menu/i }))
 
@@ -42,7 +51,11 @@ describe('ProfileMenu', () => {
 
   it('falls back to the email as the header when no name is set', async () => {
     const user = userEvent.setup()
-    render(<ProfileMenu {...BASE_PROPS} name={null} />)
+    render(
+      <MemoryRouter>
+        <ProfileMenu {...BASE_PROPS} name={null} />
+      </MemoryRouter>,
+    )
 
     const trigger = screen.getByRole('button', { name: /profile menu/i })
     expect(trigger).toHaveTextContent('N.')
@@ -53,7 +66,11 @@ describe('ProfileMenu', () => {
 
   it('toggles closed when the trigger is clicked again', async () => {
     const user = userEvent.setup()
-    render(<ProfileMenu {...BASE_PROPS} />)
+    render(
+      <MemoryRouter>
+        <ProfileMenu {...BASE_PROPS} />
+      </MemoryRouter>,
+    )
 
     const trigger = screen.getByRole('button', { name: /profile menu/i })
     await user.click(trigger)
@@ -66,10 +83,12 @@ describe('ProfileMenu', () => {
   it('closes when clicking outside', async () => {
     const user = userEvent.setup()
     render(
-      <div>
-        <ProfileMenu {...BASE_PROPS} />
-        <button type="button">Outside</button>
-      </div>,
+      <MemoryRouter>
+        <div>
+          <ProfileMenu {...BASE_PROPS} />
+          <button type="button">Outside</button>
+        </div>
+      </MemoryRouter>,
     )
 
     await user.click(screen.getByRole('button', { name: /profile menu/i }))
@@ -81,7 +100,11 @@ describe('ProfileMenu', () => {
 
   it('closes on Escape', async () => {
     const user = userEvent.setup()
-    render(<ProfileMenu {...BASE_PROPS} />)
+    render(
+      <MemoryRouter>
+        <ProfileMenu {...BASE_PROPS} />
+      </MemoryRouter>,
+    )
 
     await user.click(screen.getByRole('button', { name: /profile menu/i }))
     expect(screen.getByRole('menu')).toBeInTheDocument()
@@ -93,12 +116,39 @@ describe('ProfileMenu', () => {
   it('calls onSignOut and closes the menu when Sign out is clicked', async () => {
     const user = userEvent.setup()
     const onSignOut = vi.fn()
-    render(<ProfileMenu {...BASE_PROPS} onSignOut={onSignOut} />)
+    render(
+      <MemoryRouter>
+        <ProfileMenu {...BASE_PROPS} onSignOut={onSignOut} />
+      </MemoryRouter>,
+    )
 
     await user.click(screen.getByRole('button', { name: /profile menu/i }))
     await user.click(screen.getByRole('menuitem', { name: /sign out/i }))
 
     expect(onSignOut).toHaveBeenCalledTimes(1)
     expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+  })
+
+  it('exposes Settings, Documents, and Usage links', async () => {
+    const user = userEvent.setup()
+    render(
+      <MemoryRouter>
+        <ProfileMenu {...BASE_PROPS} />
+      </MemoryRouter>,
+    )
+
+    await user.click(screen.getByRole('button', { name: /profile menu/i }))
+    expect(screen.getByRole('menuitem', { name: /settings/i })).toHaveAttribute(
+      'href',
+      '/settings/profile',
+    )
+    expect(screen.getByRole('menuitem', { name: /documents/i })).toHaveAttribute(
+      'href',
+      '/settings/documents',
+    )
+    expect(screen.getByRole('menuitem', { name: /usage/i })).toHaveAttribute(
+      'href',
+      '/settings/usage',
+    )
   })
 })

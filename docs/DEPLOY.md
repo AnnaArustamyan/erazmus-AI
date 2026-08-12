@@ -31,7 +31,7 @@ Required:
 - `SUPABASE_URL`
 - `SUPABASE_SERVICE_ROLE_KEY` (API only)
 - `OPENAI_API_KEY` (free plan chat)
-- `MOONSHOT_API_KEY` (paid chat + document generation)
+- `MOONSHOT_API_KEY` (paid chat + document generation; Free still generates docs via Luna)
 - `CLIENT_ORIGIN` — your public UI origin, e.g. `https://app.example.com`
 - `NODE_ENV=production`
 
@@ -43,7 +43,9 @@ Optional:
 
 3. Run SQL migrations in order in the Supabase SQL Editor:
 
-- `app/api/migrations/001_users.sql` … `007_free_tier_quota.sql`
+- `app/api/migrations/001_users.sql` … `008_grant_agent.sql`
+
+The API image is built from the **repo root** (`dockerfile: app/api/Dockerfile`) so it can copy `app/resources/derived/` (pass-rate pack). Do not copy raw PDFs.
 
 4. Build and start:
 

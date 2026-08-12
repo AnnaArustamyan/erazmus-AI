@@ -9,7 +9,9 @@
 
 services:
   api:
-    build: ./app/api
+    build:
+      context: .
+      dockerfile: app/api/Dockerfile
     ports:
       - '4000:4000'
     env_file:

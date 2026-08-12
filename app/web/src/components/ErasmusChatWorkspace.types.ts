@@ -1,6 +1,11 @@
 export type ThemeMode = 'light' | 'dark'
 
-export type AgentId = 'compliance' | 'budget' | 'partner-search' | 'report-writer'
+export type AgentId =
+  | 'grant'
+  | 'compliance'
+  | 'budget'
+  | 'partner-search'
+  | 'report-writer'
 
 export interface AIAgent {
   id: AgentId
@@ -45,6 +50,9 @@ export interface SendMessageParams {
   agentId: AgentId
   history: ChatMessage[]
   attachment?: PendingAttachment
+  regenerate?: boolean
+  editMessageId?: string
+  signal?: AbortSignal
 }
 
 /** Called with each incremental chunk of the assistant's reply as it streams in. */
@@ -84,4 +92,5 @@ export interface ErasmusChatWorkspaceProps {
   /** Omit to hide the Generate application action. */
   onGenerateDocument?: () => void | Promise<void>
   isGeneratingDocument?: boolean
+  enterToSend?: boolean
 }

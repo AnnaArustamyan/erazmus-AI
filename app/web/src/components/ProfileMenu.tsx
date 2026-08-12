@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react'
-import { LogOut } from 'lucide-react'
+import { FileText, Gauge, LogOut, Settings } from 'lucide-react'
+import { Link } from 'react-router-dom'
 
 export interface ProfileMenuProps {
   name: string | null
@@ -122,6 +123,33 @@ export function ProfileMenu({
             </div>
           </div>
 
+          <Link
+            to="/settings/profile"
+            role="menuitem"
+            onClick={close}
+            className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-xs font-medium text-app-text hover:bg-app-panel-2"
+          >
+            <Settings size={14} aria-hidden="true" />
+            Settings
+          </Link>
+          <Link
+            to="/settings/documents"
+            role="menuitem"
+            onClick={close}
+            className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-xs font-medium text-app-text hover:bg-app-panel-2"
+          >
+            <FileText size={14} aria-hidden="true" />
+            Documents
+          </Link>
+          <Link
+            to="/settings/usage"
+            role="menuitem"
+            onClick={close}
+            className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-xs font-medium text-app-text hover:bg-app-panel-2"
+          >
+            <Gauge size={14} aria-hidden="true" />
+            Usage
+          </Link>
           <button
             type="button"
             role="menuitem"

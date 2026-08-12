@@ -1,4 +1,4 @@
-import { API_BASE_URL } from './config'
+import { apiFetch, parseErrorBody } from './http'
 
 export interface DocumentSummary {
   id: string
@@ -16,50 +16,36 @@ export interface GeneratedDocument extends DocumentSummary {
   }
 }
 
-async function parseError(res: Response): Promise<string> {
-  try {
-    const body = (await res.json()) as { error?: string }
-    return body.error || res.statusText
-  } catch {
-    return res.statusText
-  }
-}
-
-export async function listDocuments(accessToken: string): Promise<DocumentSummary[]> {
-  const res = await fetch(`${API_BASE_URL}/api/documents`, {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  })
-  if (!res.ok) throw new Error(await parseError(res))
+export async function listDocuments(accessToken: string | null): Promise<DocumentSummary[]> {
+  const res = await apiFetch('/api/documents', { accessToken })
+  if (!res.ok) throw new Error(await parseErrorBody(res, 'Could not list documents'))
   const body = (await res.json()) as { documents: DocumentSummary[] }
   return body.documents
 }
 
 export async function generateDocumentFromConversation(
-  accessToken: string,
+  accessToken: string | null,
   conversationId: string,
 ): Promise<GeneratedDocument> {
-  const res = await fetch(`${API_BASE_URL}/api/documents/from-conversation`, {
+  const res = await apiFetch('/api/documents/from-conversation', {
     method: 'POST',
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-    },
+    accessToken,
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ conversationId }),
   })
-  if (!res.ok) throw new Error(await parseError(res))
+  if (!res.ok) throw new Error(await parseErrorBody(res, 'Could not generate document'))
   return (await res.json()) as GeneratedDocument
 }
 
 export async function getDocumentDownloadUrl(
-  accessToken: string,
+  accessToken: string | null,
   documentId: string,
   format: 'md' | 'docx' = 'docx',
 ): Promise<string> {
-  const res = await fetch(
-    `${API_BASE_URL}/api/documents/${documentId}/download?format=${format}`,
-    { headers: { Authorization: `Bearer ${accessToken}` } },
-  )
-  if (!res.ok) throw new Error(await parseError(res))
+  const res = await apiFetch(`/api/documents/${documentId}/download?format=${format}`, {
+    accessToken,
+  })
+  if (!res.ok) throw new Error(await parseErrorBody(res, 'Could not get download URL'))
   const body = (await res.json()) as { url: string }
   return body.url
 }

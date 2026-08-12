@@ -1,5 +1,5 @@
 import type { AgentId } from '../components/ErasmusChatWorkspace.types'
-import { API_BASE_URL } from './config'
+import { apiFetch, parseErrorBody } from './http'
 
 export interface ConversationSummary {
   id: string
@@ -18,16 +18,9 @@ export interface ConversationMessage {
   attachment?: { name: string; url?: string; path?: string }
 }
 
-async function parseErrorBody(response: Response): Promise<string> {
-  const body = await response.json().catch(() => null)
-  return body?.error ?? `Request failed (${response.status})`
-}
-
-export async function listConversations(accessToken: string): Promise<ConversationSummary[]> {
-  const response = await fetch(`${API_BASE_URL}/api/conversations`, {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  })
-  if (!response.ok) throw new Error(await parseErrorBody(response))
+export async function listConversations(accessToken: string | null): Promise<ConversationSummary[]> {
+  const response = await apiFetch('/api/conversations', { accessToken })
+  if (!response.ok) throw new Error(await parseErrorBody(response, 'Could not load conversations'))
   const data = await response.json()
   return data.conversations.map(
     (c: { id: string; agent_id: AgentId; title: string | null; updated_at: string; created_at: string }) => ({
@@ -41,13 +34,11 @@ export async function listConversations(accessToken: string): Promise<Conversati
 }
 
 export async function getConversationMessages(
-  accessToken: string,
+  accessToken: string | null,
   conversationId: string,
 ): Promise<ConversationMessage[]> {
-  const response = await fetch(`${API_BASE_URL}/api/conversations/${conversationId}/messages`, {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  })
-  if (!response.ok) throw new Error(await parseErrorBody(response))
+  const response = await apiFetch(`/api/conversations/${conversationId}/messages`, { accessToken })
+  if (!response.ok) throw new Error(await parseErrorBody(response, 'Could not load messages'))
   const data = await response.json()
   return data.messages.map(
     (m: {
@@ -72,10 +63,12 @@ export async function getConversationMessages(
   )
 }
 
-export async function deleteConversation(accessToken: string, conversationId: string): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/api/conversations/${conversationId}`, {
+export async function deleteConversation(accessToken: string | null, conversationId: string): Promise<void> {
+  const response = await apiFetch(`/api/conversations/${conversationId}`, {
     method: 'DELETE',
-    headers: { Authorization: `Bearer ${accessToken}` },
+    accessToken,
   })
-  if (!response.ok && response.status !== 404) throw new Error(await parseErrorBody(response))
+  if (!response.ok && response.status !== 404) {
+    throw new Error(await parseErrorBody(response, 'Could not delete conversation'))
+  }
 }
