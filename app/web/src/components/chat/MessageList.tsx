@@ -1,11 +1,10 @@
 import { useState } from 'react'
-import { Bot, Check, Copy, FileText, Pencil, RefreshCw, User } from 'lucide-react'
+import { Check, Copy, FileText, Pencil, RefreshCw } from 'lucide-react'
 import type { ChatMessage } from '../ErasmusChatWorkspace.types'
 import { MessageContent } from './MessageContent'
 
 interface MessageBubbleProps {
   message: ChatMessage
-  agentName: string
   isLastAssistant: boolean
   isSending: boolean
   onRetry: (message: ChatMessage) => void
@@ -17,7 +16,6 @@ interface MessageBubbleProps {
 
 export function MessageBubble({
   message,
-  agentName,
   isLastAssistant,
   isSending,
   onRetry,
@@ -28,32 +26,22 @@ export function MessageBubble({
 }: MessageBubbleProps) {
   const isUser = message.role === 'user'
   const copied = copiedId === message.id
+
   return (
-    <div
-      className={`group flex items-start gap-3 py-2 ${isUser ? 'flex-row-reverse' : ''}`}
+    <article
+      className={`group py-5 ${isUser ? '' : 'border-b border-app-border/60 last:border-b-0'}`}
     >
-      <div
-        aria-hidden="true"
-        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
-          isUser
-            ? 'bg-app-panel-2 text-app-text-dim'
-            : 'bg-app-accent-soft text-app-accent'
-        }`}
-      >
-        {isUser ? <User size={14} /> : <Bot size={14} />}
-      </div>
-      <div className={`flex max-w-[78%] flex-col ${isUser ? 'items-end' : 'items-start'}`}>
+      <div className={`mx-auto max-w-2xl ${isUser ? 'flex justify-end' : ''}`}>
         {!isUser && (
-          <span className="mb-1 text-xs font-semibold text-app-text-dim">
-            {agentName}
-          </span>
+          <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-app-text-dim">
+            Erasmus AI
+          </div>
         )}
+
         {message.attachment && (
           <div
-            className={`mb-1.5 flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs ${
-              isUser
-                ? 'border-transparent bg-app-panel-2 text-app-text-dim'
-                : 'border-app-border bg-app-panel text-app-text-dim'
+            className={`mb-2 inline-flex items-center gap-1.5 border border-app-border bg-app-panel px-2.5 py-1.5 text-xs text-app-text-dim ${
+              isUser ? 'ml-auto' : ''
             }`}
           >
             <FileText size={12} className="shrink-0" aria-hidden="true" />
@@ -71,41 +59,45 @@ export function MessageBubble({
             )}
           </div>
         )}
+
         {(message.text || !message.attachment) && (
           <div
             className={
               isUser
-                ? 'rounded-2xl rounded-tr-sm bg-app-bubble-user px-4 py-2.5 text-sm leading-relaxed text-app-bubble-user-text'
-                : 'text-sm leading-relaxed text-app-text'
+                ? 'max-w-[92%] border border-app-border bg-app-bubble-user px-4 py-3 text-[0.95rem] leading-relaxed text-app-bubble-user-text'
+                : 'text-app-text'
             }
           >
             <MessageContent text={message.text} markdown={!isUser} />
           </div>
         )}
+
         {isUser && message.status === 'sending' && (
-          <span className="mt-1 text-xs text-app-text-dim">Sending…</span>
+          <span className="mt-1.5 block text-right text-xs text-app-text-dim">Sending…</span>
         )}
+
         {message.status === 'error' && (
           <button
             type="button"
             onClick={() => onRetry(message)}
-            className="mt-1.5 inline-flex items-center gap-1.5 rounded-md border border-app-border px-2 py-1 text-xs font-medium text-app-danger hover:bg-app-panel-2 focus-visible:outline-2 focus-visible:outline-app-accent focus-visible:outline-offset-2"
+            className="mt-2 inline-flex items-center gap-1.5 border border-app-border px-2.5 py-1 text-xs font-medium text-app-danger hover:bg-app-panel focus-visible:outline-2 focus-visible:outline-app-accent focus-visible:outline-offset-2"
           >
             <RefreshCw size={12} aria-hidden="true" />
             Retry
           </button>
         )}
+
         {message.status !== 'error' && (message.text || isLastAssistant) && (
           <div
-            className={`mt-1 flex items-center gap-0.5 ${
+            className={`mt-2 flex items-center gap-1 ${
               isUser ? 'justify-end' : ''
-            } opacity-100 sm:opacity-0 sm:group-hover:opacity-100`}
+            } opacity-100 sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100 sm:focus-within:opacity-100`}
           >
             <button
               type="button"
               aria-label={copied ? 'Copied' : 'Copy message'}
               onClick={() => onCopy(message)}
-              className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-[11px] text-app-text-dim hover:bg-app-panel-2 hover:text-app-text"
+              className="inline-flex items-center gap-1 px-1.5 py-1 text-[11px] text-app-text-dim hover:text-app-text"
             >
               {copied ? <Check size={12} /> : <Copy size={12} />}
               {copied ? 'Copied' : 'Copy'}
@@ -115,7 +107,7 @@ export function MessageBubble({
                 type="button"
                 aria-label="Edit and resend"
                 onClick={() => onEdit(message)}
-                className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-[11px] text-app-text-dim hover:bg-app-panel-2 hover:text-app-text"
+                className="inline-flex items-center gap-1 px-1.5 py-1 text-[11px] text-app-text-dim hover:text-app-text"
               >
                 <Pencil size={12} />
                 Edit
@@ -126,7 +118,7 @@ export function MessageBubble({
                 type="button"
                 aria-label="Regenerate response"
                 onClick={onRegenerate}
-                className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-[11px] text-app-text-dim hover:bg-app-panel-2 hover:text-app-text"
+                className="inline-flex items-center gap-1 px-1.5 py-1 text-[11px] text-app-text-dim hover:text-app-text"
               >
                 <RefreshCw size={12} />
                 Regenerate
@@ -135,7 +127,7 @@ export function MessageBubble({
           </div>
         )}
       </div>
-    </div>
+    </article>
   )
 }
 
@@ -153,7 +145,6 @@ interface MessageListProps {
 
 export function MessageList({
   messages,
-  agents,
   activeAgentName,
   isSending,
   onRetry,
@@ -168,22 +159,23 @@ export function MessageList({
     .find((entry) => entry.m.role === 'assistant')?.i
 
   return (
-    <div aria-live="polite" className="mx-auto flex max-w-2xl flex-col gap-1">
+    <div aria-live="polite" className="mx-auto flex w-full max-w-2xl flex-col px-1">
       {messages.length === 0 ? (
-        <p className="pt-14 text-center text-sm text-app-text-dim">
-          Tell me about your Erasmus+ project to get started. When you are ready, generate an
-          application draft from this chat.
-        </p>
+        <div className="flex flex-col items-start gap-3 pt-16 pb-8">
+          <p className="font-display text-2xl font-semibold tracking-tight text-app-text sm:text-[1.75rem]">
+            Draft an Erasmus+ application that can pass review.
+          </p>
+          <p className="max-w-lg text-[0.95rem] leading-relaxed text-app-text-dim">
+            Share your organisations, countries, participant numbers, and the need you want to
+            address. When you are ready, ask me to draft the application — it opens beside the
+            chat so we can keep revising it.
+          </p>
+        </div>
       ) : (
         messages.map((message, index) => (
           <MessageBubble
             key={message.id}
             message={message}
-            agentName={
-              agents.find((a) => a.id === message.agentId)?.name ??
-              activeAgentName ??
-              'Erasmus AI'
-            }
             isLastAssistant={index === lastAssistantIndex}
             isSending={isSending}
             onRetry={onRetry}
@@ -195,8 +187,8 @@ export function MessageList({
         ))
       )}
       {isSending && messages[messages.length - 1]?.text === '' && (
-        <p className="py-1 text-xs text-app-text-dim" role="status">
-          {activeAgentName} is thinking…
+        <p className="py-3 text-xs text-app-text-dim" role="status">
+          {activeAgentName ?? 'Erasmus AI'} is writing…
         </p>
       )}
     </div>

@@ -70,5 +70,20 @@ describe('pass-rate knowledge pack', () => {
     expect(prompt).toContain('PASS National Agency');
     expect(prompt).toContain('## Who');
     expect(prompt).toContain('Never');
+    expect(prompt).not.toMatch(/KA153 \/ youth-worker mobility/);
+    expect(prompt).toContain('KA1 mobility vs KA2 partnership');
+  });
+
+  it('loads the project-plan skill when requested', () => {
+    const prompt = buildPassRateSystemPrompt({
+      queryText: 'staff mobility for VET teachers',
+      mode: 'document',
+      skillName: 'project-plan',
+    });
+    expect(prompt).toContain('## Risks');
+    expect(prompt).toContain('not a National Agency application form');
+    expect(prompt).toContain('Do not label KA121');
+    expect(prompt).not.toContain('## Who');
+    expect(prompt).not.toContain('Right beneficiary');
   });
 });

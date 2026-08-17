@@ -1,6 +1,31 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import request from 'supertest';
-import { emptyApplicationMarkdown } from '../lib/applicationSchema.js';
+
+const DENSE_APPLICATION = `# Youth workers TC
+
+## Who
+Sending NGO in Yerevan and a receiving organisation in Lisbon. 12 youth workers from the two organisations will take part.
+
+## Where
+Five-day training course at the Lisbon partner venue.
+
+## When
+5 working days in October 2026 plus travel days.
+
+## What & How
+### Objectives
+Youth workers will design one needs-based club session for rural youth they already work with.
+### Activities
+Four workshops and two job-shadowing visits; a day-by-day timetable is annexed.
+### Methodology
+Non-formal learning: simulations, peer learning, daily reflection.
+### Expected results
+12 session plans used within 3 months, documented with Youthpass.
+### Impact & dissemination
+Each sending organisation runs one local workshop in November. Indicator: 12 delivered sessions.
+### Annexes
+Day-by-day session plan for the 5 days is attached. No preparatory visit is requested.
+`;
 
 const {
   supabaseAdminMock,
@@ -35,6 +60,7 @@ const SAVED_DOC = {
   content_md: '# Hi',
   md_storage_path: `${USER.id}/doc-1/application.md`,
   docx_storage_path: `${USER.id}/doc-1/application.docx`,
+  pdf_storage_path: `${USER.id}/doc-1/application.pdf`,
   created_at: '2026-01-01T00:00:00.000Z',
 };
 
@@ -106,17 +132,33 @@ describe('POST /api/documents', () => {
 });
 
 describe('GET /api/documents', () => {
-  it('lists documents for the caller', async () => {
+  it('returns the latest document for a conversation', async () => {
     queueFromResults(supabaseAdminMock.from, [
       {
-        data: [{ id: 'doc-1', title: 'App', conversation_id: null, created_at: '2026-01-01T00:00:00.000Z' }],
+        data: {
+          id: 'doc-1',
+          user_id: USER.id,
+          conversation_id: 'conv-1',
+          title: 'Youth workers TC',
+          content_md: '# Youth workers TC\n',
+          md_storage_path: `${USER.id}/doc-1/application.md`,
+          docx_storage_path: `${USER.id}/doc-1/application.docx`,
+          pdf_storage_path: `${USER.id}/doc-1/application.pdf`,
+          created_at: '2026-01-01T00:00:00.000Z',
+        },
         error: null,
       },
     ]);
 
-    const res = await request(app).get('/api/documents').set('Authorization', 'Bearer t');
+    const res = await request(app)
+      .get('/api/documents?conversationId=conv-1')
+      .set('Authorization', 'Bearer t');
+
     expect(res.status).toBe(200);
-    expect(res.body.documents).toHaveLength(1);
+    expect(res.body.document.id).toBe('doc-1');
+    expect(res.body.document.contentMd).toContain('Youth workers TC');
+    expect(res.body.document.downloads.pdf).toBeTruthy();
+    expect(res.body.document.downloads.docx).toBeTruthy();
   });
 });
 
@@ -141,24 +183,25 @@ describe('POST /api/documents/from-conversation', () => {
         ],
         error: null,
       },
+      { data: null, error: null },
       {
         data: {
           id: 'doc-free',
           user_id: USER.id,
           conversation_id: 'conv-1',
           title: 'Youth workers TC',
-          content_md: emptyApplicationMarkdown('Youth workers TC'),
+          content_md: DENSE_APPLICATION,
           md_storage_path: `${USER.id}/doc-free/application.md`,
           docx_storage_path: `${USER.id}/doc-free/application.docx`,
+          pdf_storage_path: `${USER.id}/doc-free/application.pdf`,
           created_at: '2026-01-01T00:00:00.000Z',
         },
         error: null,
       },
-      { data: null, error: null },
     ]);
 
     completeChatForPlanMock.mockResolvedValue({
-      content: emptyApplicationMarkdown('Youth workers TC'),
+      content: DENSE_APPLICATION,
       totalTokens: 80,
       provider: { id: 'openai' },
     });
@@ -201,24 +244,25 @@ describe('POST /api/documents/from-conversation', () => {
         ],
         error: null,
       },
+      { data: null, error: null },
       {
         data: {
           id: 'doc-9',
           user_id: USER.id,
           conversation_id: 'conv-1',
           title: 'Youth exchange',
-          content_md: emptyApplicationMarkdown('Youth exchange'),
+          content_md: DENSE_APPLICATION,
           md_storage_path: `${USER.id}/doc-9/application.md`,
           docx_storage_path: `${USER.id}/doc-9/application.docx`,
+          pdf_storage_path: `${USER.id}/doc-9/application.pdf`,
           created_at: '2026-01-01T00:00:00.000Z',
         },
         error: null,
       },
-      { data: null, error: null },
     ]);
 
     completeChatForPlanMock.mockResolvedValue({
-      content: emptyApplicationMarkdown('Youth exchange'),
+      content: DENSE_APPLICATION,
       totalTokens: 120,
       provider: { id: 'moonshot' },
     });
@@ -230,7 +274,100 @@ describe('POST /api/documents/from-conversation', () => {
 
     expect(res.status).toBe(201);
     expect(res.body.id).toBe('doc-9');
+    expect(res.body.downloads.pdf).toBeTruthy();
     expect(res.body.downloads.docx).toBeTruthy();
     expect(completeChatForPlanMock).toHaveBeenCalledOnce();
+  });
+});
+
+describe('POST /api/documents/from-interview', () => {
+  it('requires interview markdown', async () => {
+    const res = await request(app)
+      .post('/api/documents/from-interview')
+      .set('Authorization', 'Bearer t')
+      .send({ actionCode: 'KA122' });
+    expect(res.status).toBe(400);
+  });
+
+  it('drafts a PDF from questionnaire answers', async () => {
+    queueFromResults(supabaseAdminMock.from, [
+      { data: { plan: 'pro', monthly_token_limit: 100000, tokens_used: 10 }, error: null },
+      { data: null, error: null, count: 0 },
+      { data: null, error: null },
+      { data: { ...SAVED_DOC, title: 'KA122 draft' }, error: null },
+    ]);
+    completeChatForPlanMock.mockResolvedValue({
+      content: DENSE_APPLICATION,
+      totalTokens: 40,
+      provider: { id: 'moonshot' },
+    });
+
+    const res = await request(app)
+      .post('/api/documents/from-interview')
+      .set('Authorization', 'Bearer t')
+      .send({
+        actionCode: 'KA122',
+        title: 'KA122 draft',
+        contentMd: '# KA122 draft\n\n## Needs analysis\nDigital assessment gaps',
+      });
+
+    expect(res.status).toBe(201);
+    expect(res.body.downloads.pdf).toBeTruthy();
+    const user = completeChatForPlanMock.mock.calls[0][0].messages[1].content;
+    expect(user).toContain('KA122');
+    expect(user).toContain('Do not invent');
+  });
+
+  it('saves even if the pdf_storage_path column is not in Supabase yet', async () => {
+    const { pdf_storage_path: _pdf, ...legacyDoc } = SAVED_DOC;
+    queueFromResults(supabaseAdminMock.from, [
+      { data: { plan: 'pro', monthly_token_limit: 100000, tokens_used: 10 }, error: null },
+      { data: null, error: null, count: 0 },
+      { data: null, error: null },
+      {
+        data: null,
+        error: { message: "Could not find the 'pdf_storage_path' column of 'documents' in the schema cache" },
+      },
+      { data: { ...legacyDoc, title: 'KA122 draft' }, error: null },
+    ]);
+    completeChatForPlanMock.mockResolvedValue({
+      content: DENSE_APPLICATION,
+      totalTokens: 12,
+      provider: { id: 'moonshot' },
+    });
+
+    const res = await request(app)
+      .post('/api/documents/from-interview')
+      .set('Authorization', 'Bearer t')
+      .send({
+        actionCode: 'KA122',
+        title: 'KA122 draft',
+        contentMd: '# KA122 draft\n\n## Needs analysis\nGaps',
+      });
+
+    expect(res.status).toBe(201);
+    expect(res.body.downloads.pdf).toBeTruthy();
+  });
+});
+
+describe('GET /api/documents/:id/download', () => {
+  it('defaults to the PDF', async () => {
+    queueFromResults(supabaseAdminMock.from, [{ data: SAVED_DOC, error: null }]);
+
+    const res = await request(app)
+      .get('/api/documents/doc-1/download')
+      .set('Authorization', 'Bearer t');
+
+    expect(res.status).toBe(200);
+    expect(res.body.format).toBe('pdf');
+    expect(res.body.url).toBe('https://signed.example/file');
+  });
+
+  it('rejects unknown formats', async () => {
+    const res = await request(app)
+      .get('/api/documents/doc-1/download?format=txt')
+      .set('Authorization', 'Bearer t');
+
+    expect(res.status).toBe(400);
   });
 });

@@ -1,6 +1,4 @@
-/**
- * OpenAI-compatible chat completions (OpenAI, Moonshot, etc.).
- */
+import { readUsageTotalTokens } from '../lib/tokenUsage.js';
 
 /**
  * @param {{
@@ -59,6 +57,29 @@ export async function streamOpenAiCompatibleChat({
   const decoder = new TextDecoder();
   let buffer = '';
 
+  const consumeLine = (line) => {
+    const trimmed = line.trim();
+    if (!trimmed.startsWith('data:')) return;
+    const payload = trimmed.slice(5).trim();
+    if (!payload || payload === '[DONE]') return;
+
+    let json;
+    try {
+      json = JSON.parse(payload);
+    } catch {
+      return;
+    }
+
+    const delta = json.choices?.[0]?.delta?.content;
+    if (delta) onDelta?.(delta);
+    if (json.usage) {
+      onUsage?.({
+        ...json.usage,
+        total_tokens: readUsageTotalTokens(json.usage),
+      });
+    }
+  };
+
   while (true) {
     const { done, value } = await reader.read();
     if (done) break;
@@ -67,23 +88,12 @@ export async function streamOpenAiCompatibleChat({
     const lines = buffer.split('\n');
     buffer = lines.pop() ?? '';
 
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (!trimmed.startsWith('data:')) continue;
-      const payload = trimmed.slice(5).trim();
-      if (!payload || payload === '[DONE]') continue;
+    for (const line of lines) consumeLine(line);
+  }
 
-      let json;
-      try {
-        json = JSON.parse(payload);
-      } catch {
-        continue;
-      }
-
-      const delta = json.choices?.[0]?.delta?.content;
-      if (delta) onDelta?.(delta);
-      if (json.usage) onUsage?.(json.usage);
-    }
+  buffer += decoder.decode();
+  if (buffer.trim()) {
+    for (const line of buffer.split('\n')) consumeLine(line);
   }
 }
 
@@ -135,6 +145,6 @@ export async function completeOpenAiCompatibleChat({
 
   const json = await response.json();
   const content = json.choices?.[0]?.message?.content ?? '';
-  const totalTokens = json.usage?.total_tokens ?? 0;
+  const totalTokens = readUsageTotalTokens(json.usage);
   return { content, totalTokens };
 }

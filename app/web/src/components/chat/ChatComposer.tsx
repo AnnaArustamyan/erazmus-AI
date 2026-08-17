@@ -29,6 +29,7 @@ interface ChatComposerProps {
   onAttachClick: () => void
   onFileSelected: (event: ChangeEvent<HTMLInputElement>) => void
   onStop?: () => void
+  hasDocument?: boolean
 }
 
 export function ChatComposer({
@@ -53,16 +54,17 @@ export function ChatComposer({
   onAttachClick,
   onFileSelected,
   onStop,
+  hasDocument = false,
 }: ChatComposerProps) {
   const isComposerDisabled = isExhausted
 
   return (
-    <div className="shrink-0 px-5 pb-5 pt-2">
+    <div className="shrink-0 px-5 pb-6 pt-3">
       {errorMessage && (
         <p
           id={errorId}
           role="alert"
-          className="mx-auto mb-2 flex max-w-2xl items-start gap-1.5 rounded-lg border border-app-danger/40 bg-app-panel px-3 py-2 text-xs font-medium text-app-danger"
+          className="mx-auto mb-3 flex max-w-2xl items-start gap-2 border border-app-danger/30 bg-app-surface px-3 py-2 text-xs font-medium text-app-danger"
         >
           <AlertTriangle size={13} className="mt-0.5 shrink-0" aria-hidden="true" />
           {errorMessage}
@@ -72,7 +74,7 @@ export function ChatComposer({
         <p
           id={attachmentErrorId}
           role="alert"
-          className="mx-auto mb-2 flex max-w-2xl items-start gap-1.5 rounded-lg border border-app-danger/40 bg-app-panel px-3 py-2 text-xs font-medium text-app-danger"
+          className="mx-auto mb-3 flex max-w-2xl items-start gap-2 border border-app-danger/30 bg-app-surface px-3 py-2 text-xs font-medium text-app-danger"
         >
           <AlertTriangle size={13} className="mt-0.5 shrink-0" aria-hidden="true" />
           {attachmentError}
@@ -80,11 +82,11 @@ export function ChatComposer({
       )}
       <form
         onSubmit={onSubmit}
-        className="mx-auto max-w-2xl rounded-2xl border border-app-border bg-app-panel p-3 shadow-sm"
+        className="mx-auto max-w-2xl border border-app-border bg-app-surface px-3.5 py-3"
       >
         {(pendingAttachment || isUploadingAttachment) && (
-          <div className="mb-2 flex flex-wrap gap-1.5">
-            <div className="flex items-center gap-1.5 rounded-lg border border-app-border bg-app-panel-2 py-1 pl-2.5 pr-1.5 text-xs text-app-text">
+          <div className="mb-2.5 flex flex-wrap gap-1.5">
+            <div className="flex items-center gap-1.5 border border-app-border bg-app-panel py-1 pl-2.5 pr-1.5 text-xs text-app-text">
               {isUploadingAttachment ? (
                 <Loader2 size={12} className="shrink-0 animate-spin" aria-hidden="true" />
               ) : (
@@ -98,9 +100,9 @@ export function ChatComposer({
                   type="button"
                   aria-label={`Remove attachment "${pendingAttachment.name}"`}
                   onClick={onRemoveAttachment}
-                  className="flex h-4 w-4 items-center justify-center rounded text-app-text-dim hover:bg-app-border hover:text-app-danger"
+                  className="flex h-5 w-5 items-center justify-center text-app-text-dim hover:bg-app-panel-2 hover:text-app-danger"
                 >
-                  <X size={11} />
+                  <X size={12} />
                 </button>
               )}
             </div>
@@ -112,7 +114,7 @@ export function ChatComposer({
         </label>
         <textarea
           id={composerId}
-          rows={1}
+          rows={2}
           value={draft}
           disabled={isComposerDisabled}
           onChange={(event) => onDraftChange(event.target.value)}
@@ -121,11 +123,13 @@ export function ChatComposer({
           placeholder={
             isExhausted
               ? 'Token quota exhausted — upgrade to continue'
-              : `Ask ${agentName} about your application…`
+              : hasDocument
+                ? 'Tell me which section to change, or ask a question…'
+                : 'Describe your project, partners, or ask me to draft the application…'
           }
-          className="max-h-32 min-h-6 w-full resize-none bg-transparent text-sm text-app-text placeholder:text-app-text-dim focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
+          className="max-h-40 min-h-12 w-full resize-none bg-transparent text-[0.95rem] leading-relaxed text-app-text placeholder:text-app-text-dim focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
         />
-        <div className="mt-2 flex items-center justify-between">
+        <div className="mt-2.5 flex items-center justify-between border-t border-app-border/70 pt-2.5">
           {uploadFile ? (
             <>
               <input
@@ -142,9 +146,10 @@ export function ChatComposer({
                 aria-label="Attach file"
                 onClick={onAttachClick}
                 disabled={isComposerDisabled || isUploadingAttachment}
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-app-text-dim hover:bg-app-panel-2 hover:text-app-text disabled:cursor-not-allowed disabled:opacity-40"
+                className="inline-flex h-8 items-center gap-1.5 px-2 text-xs font-medium text-app-text-dim hover:text-app-text disabled:cursor-not-allowed disabled:opacity-40"
               >
-                <Paperclip size={15} />
+                <Paperclip size={14} />
+                Attach
               </button>
             </>
           ) : (
@@ -155,9 +160,10 @@ export function ChatComposer({
               type="button"
               aria-label="Stop generating"
               onClick={onStop}
-              className="flex h-8 w-8 items-center justify-center rounded-lg bg-app-text text-app-bg focus-visible:outline-2 focus-visible:outline-app-accent focus-visible:outline-offset-2"
+              className="inline-flex h-8 items-center gap-1.5 bg-app-text px-3 text-xs font-semibold text-app-bg focus-visible:outline-2 focus-visible:outline-app-accent focus-visible:outline-offset-2"
             >
-              <Square size={12} fill="currentColor" />
+              <Square size={11} fill="currentColor" />
+              Stop
             </button>
           ) : (
             <button
@@ -169,9 +175,10 @@ export function ChatComposer({
                 isUploadingAttachment ||
                 (!draft.trim() && !pendingAttachment)
               }
-              className="flex h-8 w-8 items-center justify-center rounded-lg bg-app-text text-app-bg disabled:cursor-not-allowed disabled:opacity-40"
+              className="inline-flex h-8 items-center gap-1.5 bg-app-text px-3 text-xs font-semibold text-app-bg disabled:cursor-not-allowed disabled:opacity-35"
             >
-              <Send size={14} />
+              <Send size={13} />
+              Send
             </button>
           )}
         </div>

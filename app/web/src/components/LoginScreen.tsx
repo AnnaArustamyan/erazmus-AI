@@ -1,5 +1,5 @@
 import { useCallback, useId, useState, type FormEvent } from 'react'
-import { AlertTriangle, Moon, Sparkles, Sun } from 'lucide-react'
+import { AlertTriangle, Moon, Sun } from 'lucide-react'
 import { useAuth } from '../auth/AuthContext'
 import type { ThemeMode } from './ErasmusChatWorkspace.types'
 
@@ -70,21 +70,21 @@ export function LoginScreen({ theme, onThemeChange }: LoginScreenProps) {
     <div
       data-theme={theme}
       data-testid="erasmus-login-screen"
-      className="relative flex min-h-screen w-full items-center justify-center bg-app-bg px-4 text-app-text"
+      className="workspace-shell relative flex min-h-screen w-full items-center justify-center px-4 text-app-text"
     >
       <div className="absolute right-4 top-4">
         <div
           role="group"
           aria-label="Theme"
-          className="flex items-center gap-0.5 rounded-full border border-app-border bg-app-panel p-1"
+          className="flex items-center border border-app-border bg-app-surface p-0.5"
         >
           <button
             type="button"
             aria-label="Light theme"
             aria-pressed={theme === 'light'}
             onClick={() => onThemeChange('light')}
-            className={`flex h-6 w-7 items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-app-accent focus-visible:outline-offset-2 ${
-              theme === 'light' ? 'bg-app-bg text-app-accent shadow-sm' : 'text-app-text-dim'
+            className={`flex h-7 w-8 items-center justify-center focus-visible:outline-2 focus-visible:outline-app-accent focus-visible:outline-offset-2 ${
+              theme === 'light' ? 'bg-app-panel-2 text-app-text' : 'text-app-text-dim'
             }`}
           >
             <Sun size={13} />
@@ -94,8 +94,8 @@ export function LoginScreen({ theme, onThemeChange }: LoginScreenProps) {
             aria-label="Dark theme"
             aria-pressed={theme === 'dark'}
             onClick={() => onThemeChange('dark')}
-            className={`flex h-6 w-7 items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-app-accent focus-visible:outline-offset-2 ${
-              theme === 'dark' ? 'bg-app-bg text-app-accent shadow-sm' : 'text-app-text-dim'
+            className={`flex h-7 w-8 items-center justify-center focus-visible:outline-2 focus-visible:outline-app-accent focus-visible:outline-offset-2 ${
+              theme === 'dark' ? 'bg-app-panel-2 text-app-text' : 'text-app-text-dim'
             }`}
           >
             <Moon size={13} />
@@ -103,17 +103,14 @@ export function LoginScreen({ theme, onThemeChange }: LoginScreenProps) {
         </div>
       </div>
 
-      <div className="w-full max-w-sm rounded-2xl border border-app-border bg-app-panel p-6 shadow-sm">
-        <div className="mb-6 flex items-center gap-2.5">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-app-text text-app-bg">
-            <Sparkles size={16} />
+      <div className="w-full max-w-sm border border-app-border bg-app-surface p-7">
+        <div className="mb-7">
+          <div className="font-display text-[1.65rem] font-semibold tracking-tight text-app-text">
+            Erasmus AI
           </div>
-          <div>
-            <div className="text-sm font-semibold">Erasmus AI</div>
-            <div className="text-[10px] uppercase tracking-wide text-app-text-dim">
-              Grant Workspace
-            </div>
-          </div>
+          <p className="mt-1.5 text-sm leading-relaxed text-app-text-dim">
+            Sign in to draft Erasmus+ applications under Programme Guide pass rules.
+          </p>
         </div>
 
         <div

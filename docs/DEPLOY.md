@@ -7,7 +7,7 @@ Target shape: one VPS + Docker Compose + managed Supabase (Auth/DB/Storage) + Op
 - Long-lived Node process for SSE chat (no serverless timeouts)
 - Static web UI via nginx
 - Secrets only in host env / `app/api/.env` (never baked into images or shipped to the browser)
-- Defer Redis/workers until PDF or heavy background jobs are required
+- Defer Redis/workers until long offline jobs are required
 
 ## Prerequisites
 
@@ -43,7 +43,7 @@ Optional:
 
 3. Run SQL migrations in order in the Supabase SQL Editor:
 
-- `app/api/migrations/001_users.sql` … `008_grant_agent.sql`
+- `app/api/migrations/001_users.sql` … `009_documents_pdf.sql`
 
 The API image is built from the **repo root** (`dockerfile: app/api/Dockerfile`) so it can copy `app/resources/derived/` (pass-rate pack). Do not copy raw PDFs.
 
@@ -79,4 +79,4 @@ Compose waits for this before marking the api service healthy.
 
 ## Scaling later
 
-Early paying users: one API replica is enough. Add a worker/Redis only when you introduce PDF generation or long offline jobs.
+Early paying users: one API replica is enough. Add a worker/Redis only when you introduce long offline jobs.

@@ -1,3 +1,5 @@
+import { loadSkillBody } from './skills.js';
+
 // Appended to every prompt so instructions embedded in user-supplied
 // text (pasted application content, file excerpts, etc.) can't redefine the
 // role or exfiltrate the system prompt — a baseline prompt-injection
@@ -10,17 +12,7 @@ const SAFETY_SUFFIX =
 
 export const DEFAULT_AGENT_ID = 'grant';
 
-export const GRANT_ASSISTANT_PROMPT =
-  'You are Erasmus AI, a coach for Erasmus+ Mobility of youth workers (KA153) applications. ' +
-  'You help the user gather facts and write sections that can pass National Agency review. ' +
-  'How to talk: ' +
-  'For greetings and “how do I start”, reply in a short friendly way (a few sentences). Ask 2–4 concrete questions ' +
-  '(working title, countries/organisations, number and profile of youth workers, the need you want to address, dates/venue). ' +
-  'Do NOT paste a blank application, section skeleton, Who/Where/When/What & How outline, or markdown template. ' +
-  'When they answer, work on one topic at a time and ask for missing evidence (needs method per organisation, selection criteria, timetable). ' +
-  'Only write a full application draft when they explicitly ask to generate or draft the whole application. ' +
-  'Be concrete. Avoid generic AI filler.' +
-  SAFETY_SUFFIX;
+export const GRANT_ASSISTANT_PROMPT = `${loadSkillBody('chat-coach')}${SAFETY_SUFFIX}`;
 
 /**
  * Single product chat. Legacy specialist ids still validate so existing

@@ -53,6 +53,14 @@ export interface SendMessageParams {
   regenerate?: boolean
   editMessageId?: string
   signal?: AbortSignal
+  /** Open canvas document, so follow-ups can revise it. */
+  documentId?: string
+  onDocumentStart?: (mode: 'create' | 'revise') => void
+  onDocumentDelta?: (chunk: string) => void
+  onDocument?: (document: CanvasDocument) => void
+  onDocumentRejected?: (gaps: string[]) => void
+  /** Authoritative monthly usage from the server (during stream and on done). */
+  onUsage?: (balance: TokenBalance) => void
 }
 
 /** Called with each incremental chunk of the assistant's reply as it streams in. */
@@ -68,6 +76,19 @@ export interface ConversationSummary {
   id: string
   agentId: AgentId
   title: string
+}
+
+export interface CanvasDocument {
+  id: string
+  title: string
+  conversationId: string | null
+  contentMd: string
+  createdAt: string
+  downloads?: {
+    pdf?: string
+    md: string
+    docx: string
+  }
 }
 
 export interface ErasmusChatWorkspaceProps {
@@ -89,8 +110,7 @@ export interface ErasmusChatWorkspaceProps {
   onDeleteConversation?: (id: string) => void
   /** Omit entirely to hide the attach button. */
   uploadFile?: (file: File) => Promise<PendingAttachment>
-  /** Omit to hide the Generate application action. */
-  onGenerateDocument?: () => void | Promise<void>
-  isGeneratingDocument?: boolean
+  initialDocument?: CanvasDocument | null
+  onDocumentChange?: (document: CanvasDocument) => void
   enterToSend?: boolean
 }

@@ -9,6 +9,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { GENERIC_QUALITY_CONSTRAINTS } from './draftQuality.js';
+import { loadSkillBody } from './skills.js';
 
 export const GUIDE_YEAR = 2026;
 export const GUIDE_VERSION_LABEL = 'Programme Guide 2026 (EN, Version 1, 12/11/2025)';
@@ -223,48 +225,59 @@ export function retrievePassRateContext(queryText, options = {}) {
   };
 }
 
-const DOCUMENT_STRUCTURE = `Output Markdown only (no code fences wrapping the whole document).
-Start with a single H1 title line: "# <Project title>"
-Then include exactly these H2 sections in order: "## Who", "## Where", "## When", "## What & How"
-Under What & How, include H3 subsections: Objectives, Activities, Methodology, Expected results, Impact & dissemination, Annexes (day-by-day session plan; omit APV if no session programme)
-Use only information present in the conversation; if something is unknown write "—"
-Do not invent partners, budgets, or dates that were not discussed.`;
-
 /**
  * @param {{
  *   agentSystemPrompt?: string,
  *   queryText: string,
+ *   latestUserMessage?: string,
  *   mode?: 'chat' | 'document',
+ *   skillName?: string | null,
  * }} params
  */
+function shouldInjectKa153Pack(queryText, skillName) {
+  if (skillName === 'project-plan') {
+    return /\byouth workers?\b/i.test(queryText || '');
+  }
+  return true;
+}
+
 export function buildPassRateSystemPrompt({
   agentSystemPrompt = '',
   queryText,
   latestUserMessage,
   mode = 'chat',
+  skillName,
 }) {
+  const resolvedSkill =
+    skillName === undefined
+      ? mode === 'document'
+        ? 'application-draft'
+        : null
+      : skillName;
+  const injectKa153 = shouldInjectKa153Pack(queryText, resolvedSkill);
   const compact =
-    mode === 'chat' && isLightweightChatQuery(latestUserMessage ?? queryText);
+    (mode === 'chat' && isLightweightChatQuery(latestUserMessage ?? queryText)) || !injectKa153;
   const ctx = retrievePassRateContext(queryText, { compact });
-  const role =
-    mode === 'document'
-      ? `You are an Erasmus+ grant application drafting assistant. ${GUIDE_VERSION_LABEL}. Drafts must be written to PASS National Agency quality assessment for Mobility of youth workers (KA153 / youth-worker mobility) — not generic LLM prose.`
-      : agentSystemPrompt;
+  const skillBody = resolvedSkill ? loadSkillBody(resolvedSkill) : '';
+  const role = skillBody || agentSystemPrompt;
 
   const structureBlock =
-    mode === 'document'
-      ? `\n${DOCUMENT_STRUCTURE}\n`
-      : `\nIn chat: never dump a blank Who / Where / When / What & How application. Ask questions or draft the one section they asked for.\n`;
+    mode === 'chat' && resolvedSkill !== 'application-draft' && resolvedSkill !== 'project-plan'
+      ? `\nIn chat: never dump a blank Who / Where / When / What & How application. Ask questions or draft the one section they asked for.\n`
+      : '';
 
   const extra = [];
-  extra.push(`--- Pass-rate rules (always apply; hard constraints) ---\n${ctx.rules}`);
-  if (ctx.guideExcerpts) {
-    extra.push(`--- Relevant Programme Guide excerpts (${ctx.guideVersion}) ---\n${ctx.guideExcerpts}`);
-  }
-  if (ctx.failureModes) {
-    extra.push(
-      `--- Failure modes to avoid (negative examples; internal IDs only; do not copy) ---\n${ctx.failureModes}`,
-    );
+  extra.push(`--- Quality constraints (always apply; all models) ---\n${GENERIC_QUALITY_CONSTRAINTS}`);
+  if (injectKa153) {
+    extra.push(`--- Pass-rate rules (always apply; hard constraints) ---\n${ctx.rules}`);
+    if (ctx.guideExcerpts) {
+      extra.push(`--- Relevant Programme Guide excerpts (${ctx.guideVersion}) ---\n${ctx.guideExcerpts}`);
+    }
+    if (ctx.failureModes) {
+      extra.push(
+        `--- Failure modes to avoid (negative examples; internal IDs only; do not copy) ---\n${ctx.failureModes}`,
+      );
+    }
   }
 
   return `${role}

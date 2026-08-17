@@ -76,7 +76,7 @@ export function ProfileMenu({
         aria-controls={menuId}
         aria-label="Profile menu"
         onClick={() => setIsOpen((open) => !open)}
-        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-app-border bg-app-accent-soft font-mono text-[10px] font-bold text-app-accent hover:opacity-85 focus-visible:outline-2 focus-visible:outline-app-accent focus-visible:outline-offset-2"
+        className="flex h-8 w-8 shrink-0 items-center justify-center border border-app-border bg-app-accent-soft text-[10px] font-semibold tracking-wide text-app-accent hover:opacity-90 focus-visible:outline-2 focus-visible:outline-app-accent focus-visible:outline-offset-2"
       >
         {initials}
       </button>
@@ -86,26 +86,26 @@ export function ProfileMenu({
           id={menuId}
           role="menu"
           aria-label="Account"
-          className="absolute right-0 top-10 z-50 w-64 rounded-2xl border border-app-border bg-app-bg p-2 shadow-lg"
+          className="absolute right-0 top-10 z-50 w-64 border border-app-border bg-app-surface p-2 shadow-sm"
         >
           <div className="mb-2 flex items-center gap-2.5 border-b border-app-border px-2 pb-3">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-app-accent-soft font-mono text-xs font-bold text-app-accent">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center border border-app-border bg-app-accent-soft text-xs font-semibold text-app-accent">
               {initials}
             </div>
             <div className="min-w-0">
-              <div className="truncate text-sm font-bold text-app-text">{name || email}</div>
+              <div className="truncate text-sm font-semibold text-app-text">{name || email}</div>
               {name && <div className="truncate text-xs text-app-text-dim">{email}</div>}
             </div>
           </div>
 
-          <div className="mb-2 rounded-lg bg-app-panel p-2.5">
+          <div className="mb-2 border border-app-border bg-app-panel p-2.5">
             <div className="mb-1 flex items-center justify-between">
-              <span className="text-xs font-bold text-app-text">{capitalize(plan)} plan</span>
-              <span className="text-[10px] font-medium uppercase tracking-wide text-app-text-dim">
+              <span className="text-xs font-semibold text-app-text">{capitalize(plan)} plan</span>
+              <span className="text-[10px] font-medium uppercase tracking-[0.06em] text-app-text-dim">
                 {aiTier === 'advanced' ? 'Advanced AI' : 'Standard AI'}
               </span>
             </div>
-            <div className="mb-1.5 font-mono text-[10.5px] text-app-text-dim">
+            <div className="mb-1.5 tabular-nums text-[10.5px] text-app-text-dim">
               {formatTokens(tokensUsed)} / {formatTokens(tokenLimit)} tokens
             </div>
             <div
@@ -114,10 +114,10 @@ export function ProfileMenu({
               aria-valuenow={tokensUsed}
               aria-valuemin={0}
               aria-valuemax={tokenLimit}
-              className="h-1 w-full overflow-hidden rounded-full bg-app-border"
+              className="h-1 w-full overflow-hidden bg-app-border"
             >
               <div
-                className="h-full rounded-full bg-app-accent"
+                className="h-full bg-app-accent"
                 style={{ width: `${usagePercent}%` }}
               />
             </div>

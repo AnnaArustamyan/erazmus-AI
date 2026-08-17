@@ -7,6 +7,8 @@
 
 This folder is the source material for constrained Erasmus+ generation. Do not call Luna/Moonshot with a thin prompt. Do not scrape the internet at request time.
 
+**How the model should behave** (chat vs generator vs application PDF) lives in sibling `skills/*/SKILL.md`, not as inline strings in route files. This pack is **what is true** about the Programme Guide and failed grants.
+
 ---
 
 ## What is canonical vs example

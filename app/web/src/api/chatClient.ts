@@ -16,7 +16,23 @@ export function createApiChatClient({
 }: CreateApiChatClientOptions): SendMessageFn {
   let conversationId = initialConversationId
 
-  return async ({ text, agentId, attachment, regenerate, editMessageId, signal }, onDelta) => {
+  return async (
+    {
+      text,
+      agentId,
+      attachment,
+      regenerate,
+      editMessageId,
+      documentId,
+      signal,
+      onDocumentStart,
+      onDocumentDelta,
+      onDocument,
+      onDocumentRejected,
+      onUsage,
+    },
+    onDelta,
+  ) => {
     const accessToken = getAccessToken()
 
     let fullText = ''
@@ -38,6 +54,7 @@ export function createApiChatClient({
           attachmentName: attachment?.name,
           regenerate: regenerate || undefined,
           editMessageId: editMessageId || undefined,
+          documentId: documentId || undefined,
         }),
       })
     } catch (err) {
@@ -59,6 +76,70 @@ export function createApiChatClient({
     const decoder = new TextDecoder()
     let buffer = ''
 
+    const consumeLine = (line: string) => {
+      const trimmed = line.trim()
+      if (!trimmed.startsWith('data:')) return
+      const payload = trimmed.slice(5).trim()
+      if (!payload) return
+
+      let event: {
+        delta?: string
+        done?: boolean
+        error?: string
+        conversationId?: string
+        documentStart?: boolean
+        mode?: 'create' | 'revise'
+        documentDelta?: string
+        tokensUsed?: number
+        tokenLimit?: number
+        document?: {
+          id: string
+          title: string
+          conversationId: string | null
+          contentMd: string
+          createdAt: string
+              downloads?: { pdf: string; md: string; docx: string }
+        }
+        documentRejected?: boolean
+        gaps?: string[]
+      }
+      try {
+        event = JSON.parse(payload)
+      } catch {
+        return
+      }
+
+      if (event.error) {
+        throw new Error(event.error)
+      }
+      if (event.documentStart) {
+        onDocumentStart?.(event.mode === 'revise' ? 'revise' : 'create')
+      }
+      if (typeof event.documentDelta === 'string') {
+        onDocumentDelta?.(event.documentDelta)
+      }
+      if (event.document) {
+        onDocument?.(event.document)
+      }
+      if (event.documentRejected) {
+        onDocumentRejected?.(event.gaps ?? [])
+      }
+      if (typeof event.delta === 'string') {
+        fullText += event.delta
+        onDelta?.(event.delta)
+      }
+      if (typeof event.tokensUsed === 'number') {
+        onUsage?.({
+          used: event.tokensUsed,
+          limit: typeof event.tokenLimit === 'number' ? event.tokenLimit : 0,
+        })
+      }
+      if (event.done && event.conversationId && event.conversationId !== conversationId) {
+        conversationId = event.conversationId
+        onConversationChange?.(event.conversationId)
+      }
+    }
+
     try {
       while (true) {
         const { done, value } = await reader.read()
@@ -68,31 +149,12 @@ export function createApiChatClient({
         const lines = buffer.split('\n')
         buffer = lines.pop() ?? ''
 
-        for (const line of lines) {
-          const trimmed = line.trim()
-          if (!trimmed.startsWith('data:')) continue
-          const payload = trimmed.slice(5).trim()
-          if (!payload) continue
+        for (const line of lines) consumeLine(line)
+      }
 
-          let event: { delta?: string; done?: boolean; error?: string; conversationId?: string }
-          try {
-            event = JSON.parse(payload)
-          } catch {
-            continue
-          }
-
-          if (event.error) {
-            throw new Error(event.error)
-          }
-          if (typeof event.delta === 'string') {
-            fullText += event.delta
-            onDelta?.(event.delta)
-          }
-          if (event.done && event.conversationId && event.conversationId !== conversationId) {
-            conversationId = event.conversationId
-            onConversationChange?.(event.conversationId)
-          }
-        }
+      buffer += decoder.decode()
+      if (buffer.trim()) {
+        for (const line of buffer.split('\n')) consumeLine(line)
       }
     } catch (err) {
       if (signal?.aborted || (err instanceof DOMException && err.name === 'AbortError')) {

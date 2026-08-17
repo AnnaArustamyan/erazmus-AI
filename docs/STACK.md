@@ -18,12 +18,12 @@ docs/     — deploy / product notes
 - Plan routing: free → OpenAI **GPT-5.6 Luna** (standard), paid → Moonshot (advanced)
 - Tight free quota (20k tokens/mo); document generation paid-only
 - SSE chat, agents, attachments, quotas, tests, CI
-- Chat → application document (Markdown + DOCX)
+- Chat → application document (**PDF** primary, plus Markdown + DOCX)
 
 ## Deliberate non-goals (for now)
 
 - No Vercel/Railway/Upstash split
-- No Redis/worker until PDF or heavy jobs
+- No Redis/worker until heavy background jobs
 - API remains JavaScript (TypeScript in `app/web` only)
 - Stripe and full grant wizard UI are next, not blocking deploy
 

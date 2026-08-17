@@ -15,3 +15,10 @@ export const DEFAULT_TOKENS_PER_MESSAGE = 500
 export function formatTokens(value: number): string {
   return new Intl.NumberFormat('en-US').format(Math.max(0, Math.round(value)))
 }
+
+/** Rough live estimate until the provider reports actual usage. */
+export function estimateTokensFromText(text: string): number {
+  const trimmed = text.trim()
+  if (!trimmed) return 0
+  return Math.max(1, Math.ceil(trimmed.length / 4))
+}

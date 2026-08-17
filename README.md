@@ -55,11 +55,10 @@ See [docs/DEPLOY.md](docs/DEPLOY.md).
 ## Features
 
 - Auth (Supabase), 4 specialized agents, streaming chat, attachments, token quotas
-- Chat-based application draft → Markdown + DOCX download
+- Chat-based application draft → **PDF** download (DOCX and Markdown also available)
 - Rate limiting, helmet, CORS locked to `CLIENT_ORIGIN`
 
 ## Known follow-ups
 
 - Stripe billing
 - Full Who/Where/When/What wizard UI
-- PDF export

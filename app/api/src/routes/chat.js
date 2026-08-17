@@ -2,13 +2,32 @@ import { Router } from 'express';
 import { supabaseAdmin } from '../config/supabase.js';
 import { verifyAuth } from '../middleware/auth.js';
 import { AGENTS, DEFAULT_AGENT_ID, isValidAgentId, persistAgentId } from '../lib/agents.js';
+import { detectDocumentAction, documentChatNotice } from '../lib/documentIntent.js';
+import {
+  assessGeneratedDraft,
+  notReadyChatNotice,
+  stripMarkdownFence,
+} from '../lib/draftQuality.js';
 import { buildPassRateSystemPrompt } from '../lib/passRate.js';
 import { getPlanConfig } from '../lib/plans.js';
+import { estimateTokensFromText, readUsageTotalTokens } from '../lib/tokenUsage.js';
 import {
   isProviderConfiguredForPlan,
   streamChatForPlan,
 } from '../services/aiProvider.js';
-import { applyTokenUsage, getUserQuota, isQuotaExhausted } from '../services/quota.js';
+import {
+  createDocumentRecord,
+  getDocumentForUser,
+  toGeneratedDocumentPayload,
+  updateDocumentRecord,
+} from '../services/documents.js';
+import {
+  applyTokenUsage,
+  countDocumentsThisMonth,
+  documentCapError,
+  getUserQuota,
+  isQuotaExhausted,
+} from '../services/quota.js';
 
 const router = Router();
 
@@ -39,6 +58,7 @@ router.post('/', verifyAuth, async (req, res) => {
     attachmentName,
     regenerate,
     editMessageId,
+    documentId,
   } = req.body ?? {};
 
   const agentId = rawAgentId ? rawAgentId : DEFAULT_AGENT_ID;
@@ -95,6 +115,29 @@ router.post('/', verifyAuth, async (req, res) => {
       .single();
     if (error) return res.status(500).json({ error: 'Could not create conversation' });
     conversation = data;
+  }
+
+  let existingDoc = null;
+  if (typeof documentId === 'string' && documentId) {
+    existingDoc = await getDocumentForUser(req.user.id, documentId);
+    if (
+      existingDoc?.conversation_id &&
+      existingDoc.conversation_id !== conversation.id
+    ) {
+      existingDoc = null;
+    }
+  }
+
+  const documentAction = detectDocumentAction(message, {
+    hasDocument: Boolean(existingDoc),
+  });
+
+  if (documentAction === 'create') {
+    const documentsThisMonth = await countDocumentsThisMonth(req.user.id);
+    const capError = documentCapError(profile, documentsThisMonth);
+    if (capError) {
+      return res.status(403).json({ error: capError });
+    }
   }
 
   if (editMessageId) {
@@ -171,18 +214,39 @@ router.post('/', verifyAuth, async (req, res) => {
     ...(history ?? []).map((m) => m.content),
     message,
   ].join('\n');
-  const chatMessages = [
-    {
-      role: 'system',
-      content: buildPassRateSystemPrompt({
-        agentSystemPrompt: agent.systemPrompt,
-        queryText,
-        latestUserMessage: message,
-        mode: 'chat',
-      }),
-    },
-    ...(history ?? []).map((m) => ({ role: m.role, content: m.content })),
-  ];
+  const draftingDocument = documentAction === 'create' || documentAction === 'revise';
+  const chatMessages = draftingDocument
+    ? [
+        {
+          role: 'system',
+          content: buildPassRateSystemPrompt({
+            queryText,
+            latestUserMessage: message,
+            mode: 'document',
+            skillName: 'application-draft',
+          }),
+        },
+        ...(history ?? []).map((m) => ({ role: m.role, content: m.content })),
+        {
+          role: 'user',
+          content:
+            documentAction === 'revise' && existingDoc
+              ? `Here is the current application draft to revise:\n\n${existingDoc.content_md}\n\nRevise the FULL Markdown document according to the latest user instruction. Keep sections that should not change. Output Markdown only — no preamble.`
+              : 'Draft the complete Erasmus+ application from this conversation. Match the action type discussed (KA1 or KA2). Output Markdown only — no preamble. If it is not ready, output the short Not ready to draft note — never blank "—" fields.',
+        },
+      ]
+    : [
+        {
+          role: 'system',
+          content: buildPassRateSystemPrompt({
+            agentSystemPrompt: agent.systemPrompt,
+            queryText,
+            latestUserMessage: message,
+            mode: 'chat',
+          }),
+        },
+        ...(history ?? []).map((m) => ({ role: m.role, content: m.content })),
+      ];
 
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
@@ -196,28 +260,80 @@ router.post('/', verifyAuth, async (req, res) => {
   req.on('close', onClientClose);
 
   let fullText = '';
+  let streamedDocument = '';
   let totalTokens = 0;
   let providerId = planConfig.provider;
-  let aborted = false;
+  let documentPayload = null;
+
+  const emitLiveUsage = (turnTokens) => {
+    totalTokens = turnTokens;
+    if (res.writableEnded) return;
+    const used = Math.min(
+      profile.monthly_token_limit,
+      profile.tokens_used + Math.max(0, turnTokens),
+    );
+    writeEvent(res, {
+      tokensUsed: used,
+      tokenLimit: profile.monthly_token_limit,
+    });
+  };
 
   try {
-    const provider = await streamChatForPlan({
-      plan: profile.plan,
-      messages: chatMessages,
-      signal: abortController.signal,
-      onDelta: (delta) => {
-        fullText += delta;
-        writeEvent(res, { delta });
-      },
-      onUsage: (usage) => {
-        totalTokens = usage.total_tokens ?? 0;
-      },
-    });
-    providerId = provider.id;
-  } catch (err) {
-    if (isAbortError(err) || abortController.signal.aborted) {
-      aborted = true;
+    if (draftingDocument) {
+      writeEvent(res, { documentStart: true, mode: documentAction });
+      let contentMd = '';
+      const provider = await streamChatForPlan({
+        plan: profile.plan,
+        messages: chatMessages,
+        signal: abortController.signal,
+        onDelta: (delta) => {
+          contentMd += delta;
+          streamedDocument = contentMd;
+          writeEvent(res, { documentDelta: delta });
+        },
+        onUsage: (usage) => {
+          emitLiveUsage(readUsageTotalTokens(usage));
+        },
+      });
+      providerId = provider.id;
+      contentMd = stripMarkdownFence(contentMd);
+      streamedDocument = contentMd;
+      const quality = assessGeneratedDraft(contentMd, { sourceText: queryText, kind: 'application' });
+      if (!quality.ready) {
+        fullText = notReadyChatNotice(quality);
+        writeEvent(res, { documentRejected: true, gaps: quality.gaps });
+        writeEvent(res, { delta: fullText });
+      } else {
+        const saved =
+          documentAction === 'revise' && existingDoc
+            ? await updateDocumentRecord({ existing: existingDoc, contentMd })
+            : await createDocumentRecord({
+                userId: req.user.id,
+                conversationId: conversation.id,
+                contentMd,
+              });
+        documentPayload = await toGeneratedDocumentPayload(saved);
+        writeEvent(res, { document: documentPayload });
+        fullText = documentChatNotice(documentAction);
+        writeEvent(res, { delta: fullText });
+      }
     } else {
+      const provider = await streamChatForPlan({
+        plan: profile.plan,
+        messages: chatMessages,
+        signal: abortController.signal,
+        onDelta: (delta) => {
+          fullText += delta;
+          writeEvent(res, { delta });
+        },
+        onUsage: (usage) => {
+          emitLiveUsage(readUsageTotalTokens(usage));
+        },
+      });
+      providerId = provider.id;
+    }
+  } catch (err) {
+    if (!(isAbortError(err) || abortController.signal.aborted)) {
       console.error('[chat] AI stream failed', err);
       writeEvent(res, { error: 'AI provider request failed. Please try again.' });
       req.off('close', onClientClose);
@@ -227,14 +343,21 @@ router.post('/', verifyAuth, async (req, res) => {
 
   req.off('close', onClientClose);
 
-  if (fullText) {
-    await supabaseAdmin.from('messages').insert({
-      conversation_id: conversation.id,
-      role: 'assistant',
-      content: fullText,
-      tokens_used: totalTokens,
-      agent_id: storedAgentId,
-    });
+  const outputForBilling = streamedDocument || fullText;
+  if (!totalTokens && outputForBilling) {
+    totalTokens = estimateTokensFromText(outputForBilling);
+  }
+
+  if (fullText || streamedDocument) {
+    if (fullText) {
+      await supabaseAdmin.from('messages').insert({
+        conversation_id: conversation.id,
+        role: 'assistant',
+        content: fullText,
+        tokens_used: totalTokens,
+        agent_id: storedAgentId,
+      });
+    }
 
     await supabaseAdmin
       .from('conversations')
@@ -248,7 +371,7 @@ router.post('/', verifyAuth, async (req, res) => {
       totalTokens,
     );
 
-    if (!aborted && !res.writableEnded) {
+    if (!res.writableEnded) {
       writeEvent(res, {
         done: true,
         conversationId: conversation.id,
@@ -256,6 +379,7 @@ router.post('/', verifyAuth, async (req, res) => {
         tokenLimit: profile.monthly_token_limit,
         provider: providerId,
         aiTier: planConfig.aiTier,
+        ...(documentPayload ? { documentId: documentPayload.id } : {}),
       });
     }
   }

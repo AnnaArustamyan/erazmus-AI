@@ -17,18 +17,18 @@ export function HistorySection({
   onDeleteConversation,
 }: HistorySectionProps) {
   return (
-    <div className="mt-5 flex min-h-0 flex-1 flex-col">
+    <div className="flex min-h-0 flex-1 flex-col">
       <button
         type="button"
         onClick={() => onNewChat?.()}
-        className="mb-3 flex items-center gap-2 rounded-lg border border-app-border px-3 py-2 text-sm font-medium text-app-text hover:bg-app-panel-2 focus-visible:outline-2 focus-visible:outline-app-accent focus-visible:outline-offset-2"
+        className="mb-4 flex items-center justify-center gap-2 border border-app-border bg-app-surface px-3 py-2 text-sm font-medium text-app-text hover:bg-app-panel-2 focus-visible:outline-2 focus-visible:outline-app-accent focus-visible:outline-offset-2"
       >
         <Plus size={14} aria-hidden="true" />
         New chat
       </button>
 
-      <span className="mb-1.5 px-1.5 text-[10px] font-semibold uppercase tracking-wide text-app-text-dim">
-        History
+      <span className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-app-text-dim">
+        Conversations
       </span>
 
       <div
@@ -37,7 +37,9 @@ export function HistorySection({
         className="flex flex-1 flex-col gap-0.5 overflow-y-auto"
       >
         {conversations.length === 0 ? (
-          <p className="px-1.5 py-2 text-xs text-app-text-dim">No previous chats yet.</p>
+          <p className="py-2 text-xs leading-relaxed text-app-text-dim">
+            No conversations yet. Start with your organisations and the need you want to address.
+          </p>
         ) : (
           conversations.map((conversation) => {
             const isActive = conversation.id === activeConversationId
@@ -48,10 +50,10 @@ export function HistorySection({
                   type="button"
                   onClick={() => onSelectConversation?.(conversation.id)}
                   aria-current={isActive ? 'true' : undefined}
-                  className={`flex w-full items-center rounded-lg py-1.5 pl-3 pr-7 text-left text-xs transition-colors focus-visible:outline-2 focus-visible:outline-app-accent focus-visible:outline-offset-2 ${
+                  className={`flex w-full items-center py-2 pl-2.5 pr-7 text-left text-[13px] transition-colors focus-visible:outline-2 focus-visible:outline-app-accent focus-visible:outline-offset-2 ${
                     isActive
-                      ? 'bg-app-panel-2 font-semibold text-app-text'
-                      : 'text-app-text-dim hover:bg-app-panel-2 hover:text-app-text'
+                      ? 'border-l-2 border-app-accent bg-app-panel-2 font-medium text-app-text'
+                      : 'border-l-2 border-transparent text-app-text-dim hover:bg-app-panel-2 hover:text-app-text'
                   }`}
                 >
                   <span className="truncate">{label}</span>
@@ -63,9 +65,9 @@ export function HistorySection({
                     event.stopPropagation()
                     onDeleteConversation?.(conversation.id)
                   }}
-                  className="absolute right-1 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-md text-app-text-dim opacity-0 hover:bg-app-border hover:text-app-danger focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-app-accent focus-visible:outline-offset-2 group-hover:opacity-100"
+                  className="absolute right-1 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center text-app-text-dim opacity-0 hover:text-app-danger focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-app-accent focus-visible:outline-offset-2 group-hover:opacity-100"
                 >
-                  <X size={11} />
+                  <X size={12} />
                 </button>
               </div>
             )

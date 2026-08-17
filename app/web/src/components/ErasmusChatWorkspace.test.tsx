@@ -25,7 +25,8 @@ describe('ErasmusChatWorkspace — rendering', () => {
   it('renders the brand and does not show specialist agent tabs', () => {
     renderWorkspace()
 
-    expect(screen.getByText('Grant Workspace')).toBeInTheDocument()
+    expect(screen.getAllByText('Erasmus AI').length).toBeGreaterThan(0)
+    expect(screen.getByText(/KA1 and KA2 drafts under Programme Guide pass rules/i)).toBeInTheDocument()
     expect(screen.queryByRole('tablist', { name: /specialized ai agents/i })).not.toBeInTheDocument()
     expect(screen.queryByRole('tab')).not.toBeInTheDocument()
   })
@@ -70,7 +71,7 @@ describe('ErasmusChatWorkspace — rendering', () => {
   it('renders an empty-state prompt when there are no messages', () => {
     renderWorkspace()
     expect(
-      screen.getByText(/tell me about your erasmus\+ project/i),
+      screen.getByText(/draft an erasmus\+ application that can pass review/i),
     ).toBeInTheDocument()
   })
 })
@@ -93,7 +94,7 @@ describe('ErasmusChatWorkspace — message dispatching', () => {
     ).toBeInTheDocument()
     expect(textbox).toHaveValue('')
     expect(screen.getByRole('button', { name: /stop generating/i })).toBeInTheDocument()
-    expect(screen.getByText(/erasmus ai is thinking/i)).toBeInTheDocument()
+    expect(screen.getByText(/erasmus ai is writing/i)).toBeInTheDocument()
     expect(sendMessage).toHaveBeenCalledWith(
       expect.objectContaining({
         text: 'What are the eligible countries for KA2?',
@@ -107,11 +108,35 @@ describe('ErasmusChatWorkspace — message dispatching', () => {
     expect(
       await screen.findByText('Here are the eligible KA2 countries…'),
     ).toBeInTheDocument()
-    expect(screen.queryByText(/erasmus ai is thinking/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/erasmus ai is writing/i)).not.toBeInTheDocument()
     expect(screen.getByRole('group', { name: /token balance/i })).toHaveTextContent(
       '500 / 3,000,000',
     )
     expect(onTokenBalanceChange).toHaveBeenCalledWith({ used: 500, limit: 3_000_000 })
+  })
+
+  it('applies live token usage reported by the server', async () => {
+    const user = userEvent.setup()
+    const onTokenBalanceChange = vi.fn()
+    const sendMessage = vi.fn<SendMessageFn>(async (params, onDelta) => {
+      onDelta?.('Hello')
+      params.onUsage?.({ used: 842, limit: 3_000_000 })
+      return 'Hello'
+    })
+
+    renderWorkspace({ sendMessage, onTokenBalanceChange })
+
+    await user.type(
+      screen.getByRole('textbox', { name: /message erasmus ai/i }),
+      'What is KA153?',
+    )
+    await user.click(screen.getByRole('button', { name: /send message/i }))
+
+    expect(await screen.findByText('Hello')).toBeInTheDocument()
+    expect(screen.getByRole('group', { name: /token balance/i })).toHaveTextContent(
+      '842 / 3,000,000',
+    )
+    expect(onTokenBalanceChange).toHaveBeenCalledWith({ used: 842, limit: 3_000_000 })
   })
 
   it('sends a message when pressing Enter, and inserts a newline on Shift+Enter', async () => {
@@ -144,7 +169,7 @@ describe('ErasmusChatWorkspace — message dispatching', () => {
     await user.type(textbox, '{Enter}')
     expect(sendMessage).not.toHaveBeenCalled()
     expect(
-      screen.getByText(/tell me about your erasmus\+ project/i),
+      screen.getByText(/draft an erasmus\+ application that can pass review/i),
     ).toBeInTheDocument()
   })
 
@@ -337,7 +362,7 @@ describe('ErasmusChatWorkspace — token exhaustion guard', () => {
     await user.click(sendButton)
     expect(sendMessage).not.toHaveBeenCalled()
 
-    expect(screen.getByRole('alert')).toHaveTextContent(/upgrade your plan/i)
+    expect(screen.getByRole('alert')).toHaveTextContent(/upgrade to keep drafting/i)
   })
 })
 
@@ -396,7 +421,7 @@ describe('ErasmusChatWorkspace — conversation history', () => {
   it('renders an empty-history message when conversations is an empty array', () => {
     renderWorkspace({ conversations: [] })
     expect(screen.getByRole('button', { name: /new chat/i })).toBeInTheDocument()
-    expect(screen.getByText(/no previous chats yet/i)).toBeInTheDocument()
+    expect(screen.getByText(/No conversations yet/i)).toBeInTheDocument()
   })
 
   it('renders each conversation and marks the active one', () => {
@@ -557,5 +582,81 @@ describe('ErasmusChatWorkspace — message actions', () => {
     await user.click(screen.getByRole('button', { name: /stop generating/i }))
     expect(await screen.findByText('Partial draft')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /stop generating/i })).not.toBeInTheDocument()
+  })
+})
+
+describe('ErasmusChatWorkspace — document canvas', () => {
+  const draft = {
+    id: 'doc-1',
+    title: 'Youth workers TC',
+    conversationId: 'conv-1',
+    contentMd: '# Youth workers TC\n\n## Who\n- **Applicant:** NGO\n',
+    createdAt: '2026-01-01T00:00:00.000Z',
+    downloads: { pdf: 'https://example/pdf', md: 'https://example/md', docx: 'https://example/docx' },
+  }
+
+  it('does not show a generate-application button', () => {
+    renderWorkspace()
+    expect(screen.queryByRole('button', { name: /generate application/i })).not.toBeInTheDocument()
+  })
+
+  it('opens the canvas from an existing conversation draft', () => {
+    renderWorkspace({ initialDocument: draft })
+    expect(screen.getByTestId('document-canvas')).toBeInTheDocument()
+    expect(screen.getByTestId('document-canvas')).toHaveTextContent('Youth workers TC')
+    expect(screen.getByRole('link', { name: /pdf/i })).toHaveAttribute(
+      'href',
+      'https://example/pdf',
+    )
+    expect(screen.getByRole('link', { name: /docx/i })).toHaveAttribute(
+      'href',
+      'https://example/docx',
+    )
+  })
+
+  it('sends the open document id so follow-ups can revise it', async () => {
+    const user = userEvent.setup()
+    const sendMessage = vi.fn<SendMessageFn>().mockResolvedValue('Updated the draft in the canvas.')
+    renderWorkspace({ initialDocument: draft, sendMessage })
+
+    await user.type(
+      screen.getByRole('textbox', { name: /message erasmus ai/i }),
+      'Make the objectives more concrete',
+    )
+    await user.click(screen.getByRole('button', { name: /send message/i }))
+
+    expect(sendMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        text: 'Make the objectives more concrete',
+        documentId: 'doc-1',
+      }),
+      expect.any(Function),
+    )
+  })
+
+  it('opens the canvas when the assistant starts drafting a document', async () => {
+    const user = userEvent.setup()
+    const sendMessage = vi.fn<SendMessageFn>(async (params, onDelta) => {
+      params.onDocumentStart?.('create')
+      params.onDocumentDelta?.('# Youth workers TC\n')
+      params.onDocument?.({
+        ...draft,
+        contentMd: '# Youth workers TC\n',
+      })
+      onDelta?.('I drafted the application in the canvas on the right.')
+      return 'I drafted the application in the canvas on the right.'
+    })
+    renderWorkspace({ sendMessage })
+
+    await user.type(
+      screen.getByRole('textbox', { name: /message erasmus ai/i }),
+      'Draft a KA153 application',
+    )
+    await user.click(screen.getByRole('button', { name: /send message/i }))
+
+    expect(await screen.findByTestId('document-canvas')).toBeInTheDocument()
+    expect(
+      await screen.findByText(/i drafted the application in the canvas on the right/i),
+    ).toBeInTheDocument()
   })
 })

@@ -73,7 +73,7 @@ Working today:
 - Streaming chat, conversation history, attachments
 - Token quotas by plan
 - Free → OpenAI Luna; paid → Moonshot
-- Chat → document generation (MD + DOCX), currently gated to paid
+- Chat → document generation (MD + DOCX + **PDF**), currently gated to paid
 - Minimal profile menu (name, plan, tokens, sign out)
 
 Gaps this document closes: docs on Free, settings area, chat message actions, durable session, and the pass-rate knowledge / prompt foundation.
@@ -85,6 +85,7 @@ Gaps this document closes: docs on Free, settings area, chat message actions, du
 ### In scope
 
 - Docs on all plans, gated by token quota and monthly doc caps
+- **PDF export** of generated applications (primary download; DOCX + Markdown also available)
 - Profile / settings / usage / security / documents pages
 - Chat controls: copy, regenerate, edit and resend, stop
 - Session that survives page refresh
@@ -95,7 +96,6 @@ Gaps this document closes: docs on Free, settings area, chat message actions, du
 ### Out of scope for this sprint
 
 - Live Stripe billing (manual plan change in DB is OK for launch)
-- PDF export
 - Mobile native apps
 - AWS migration
 - Rewriting away from Supabase
@@ -228,7 +228,7 @@ Assessments + Guide youth-worker section are **canonical**. Full applications ar
 
 ## 13. QA checklist
 
-1. Free user: register → chat → generate doc → download MD/DOCX  
+1. Free user: register → chat → generate doc → download PDF  
 2. Free user: hit monthly doc cap → clear error  
 3. Settings: change name + theme → survive refresh  
 4. Usage: tokens and doc counts correct  
@@ -244,4 +244,4 @@ Assessments + Guide youth-worker section are **canonical**. Full applications ar
 
 ## 14. Success definition
 
-A Free user can sign up, chat with message controls, open settings, stay logged in after refresh, and download an application draft **without leaving for ChatGPT** — and that draft is produced under Erasmus+ pass rules (current Guide year + failure feedback), not a generic LLM reply.
+A Free user can sign up, chat with message controls, open settings, stay logged in after refresh, and download an application PDF **without leaving for ChatGPT** — and that draft is produced under Erasmus+ pass rules (current Guide year + failure feedback), not a generic LLM reply.

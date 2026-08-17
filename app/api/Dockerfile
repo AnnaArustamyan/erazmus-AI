@@ -10,6 +10,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY app/api/package*.json ./
 COPY app/api/src ./src
 COPY app/resources/derived ./resources/derived
+COPY app/resources/skills ./resources/skills
 COPY app/resources/README.md app/resources/MAPPING.md ./resources/
 
 EXPOSE 4000

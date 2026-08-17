@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { BrowserRouter, Navigate, Route, Routes, useNavigate } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './auth/AuthContext'
 import { LoginScreen } from './components/LoginScreen'
 import { ErasmusChatWorkspace } from './components/ErasmusChatWorkspace'
@@ -13,13 +13,13 @@ import {
   type ConversationSummary as ApiConversationSummary,
 } from './api/conversationsClient'
 import {
-  generateDocumentFromConversation,
+  getDocumentForConversation,
   listDocuments,
   type DocumentSummary,
-  type GeneratedDocument,
 } from './api/documentsClient'
 import type {
   AgentId,
+  CanvasDocument,
   ChatMessage,
   ConversationSummary,
   ThemeMode,
@@ -38,6 +38,12 @@ import { PreferencesPage } from './pages/settings/PreferencesPage'
 import { UsagePage } from './pages/settings/UsagePage'
 import { SecurityPage } from './pages/settings/SecurityPage'
 import { DocumentsPage } from './pages/settings/DocumentsPage'
+import { GeneratorPage } from './pages/GeneratorPage'
+import { GrantsLibraryPage } from './pages/GrantsLibraryPage'
+import { GrantsBuilderPage } from './pages/GrantsBuilderPage'
+import { GrantInterviewProvider } from './grants/GrantInterviewContext'
+import { IconRail } from './components/layout/IconRail'
+import { MobileTabBar } from './components/layout/MobileTabBar'
 
 function toSummary(c: ApiConversationSummary): ConversationSummary {
   return { id: c.id, agentId: c.agentId, title: c.title ?? '' }
@@ -54,15 +60,13 @@ function AppHeader({
   const navigate = useNavigate()
 
   return (
-    <div className="flex shrink-0 items-center justify-between gap-3 border-b border-app-border bg-app-panel px-4 py-1.5">
+    <div className="flex shrink-0 items-center justify-between gap-3 border-b border-app-border bg-app-panel/95 px-5 py-2.5 backdrop-blur-[2px]">
       <button
         type="button"
         onClick={() => navigate('/')}
         className="min-w-0 truncate text-left text-xs text-app-text-dim hover:text-app-text"
       >
-        {profile?.features?.canGenerateDocuments
-          ? 'Chat, then generate an application draft under Erasmus+ pass rules'
-          : 'Standard AI chat. Upgrade for a stronger pass-rate model and higher limits.'}
+        Erasmus+ KA1 & KA2 · Guide-aligned drafting
       </button>
       <ProfileMenu
         name={profile?.name ?? null}
@@ -92,6 +96,8 @@ function ChatWorkspace({
   const { accessToken, profile, setProfileTokensUsed } = useAuth()
   const tokenRef = useRef(accessToken)
   tokenRef.current = accessToken
+  const location = useLocation()
+  const navigate = useNavigate()
 
   const [conversations, setConversations] = useState<ConversationSummary[]>([])
   const [activeConversationId, setActiveConversationId] = useState<string | undefined>()
@@ -100,8 +106,7 @@ function ChatWorkspace({
   const [isLoadingThread, setIsLoadingThread] = useState(true)
   const [threadError, setThreadError] = useState<string | null>(null)
   const [workspaceKey, setWorkspaceKey] = useState(0)
-  const [isGeneratingDocument, setIsGeneratingDocument] = useState(false)
-  const [latestDocument, setLatestDocument] = useState<GeneratedDocument | null>(null)
+  const [threadDocument, setThreadDocument] = useState<CanvasDocument | null>(null)
   const [documents, setDocuments] = useState<DocumentSummary[]>([])
 
   const refreshConversations = useCallback(async () => {
@@ -148,11 +153,28 @@ function ChatWorkspace({
         setThreadAgentId(lastAgentId ?? DEFAULT_AGENT_ID)
         setActiveConversationId(id)
         saveActiveConversationId(id)
+        const doc = await getDocumentForConversation(token, id).catch((err) => {
+          console.error('[documents] failed to load conversation draft', err)
+          return null
+        })
+        setThreadDocument(
+          doc
+            ? {
+                id: doc.id,
+                title: doc.title,
+                conversationId: doc.conversationId,
+                contentMd: doc.contentMd ?? '',
+                createdAt: doc.createdAt,
+                downloads: doc.downloads,
+              }
+            : null,
+        )
       } else {
         setThreadMessages([])
         setThreadAgentId(DEFAULT_AGENT_ID)
         setActiveConversationId(undefined)
         saveActiveConversationId(undefined)
+        setThreadDocument(null)
       }
       setWorkspaceKey((key) => key + 1)
     } catch (err) {
@@ -189,6 +211,13 @@ function ChatWorkspace({
     void openConversation(undefined)
   }, [openConversation])
 
+  useEffect(() => {
+    if ((location.state as { newChat?: boolean } | null)?.newChat) {
+      handleNewChat()
+      navigate('/chat', { replace: true, state: {} })
+    }
+  }, [handleNewChat, location.state, navigate])
+
   const handleSelectConversation = useCallback(
     (id: string) => {
       if (id === activeConversationId) return
@@ -222,26 +251,6 @@ function ChatWorkspace({
     return { path: uploaded.path, name: uploaded.name }
   }, [])
 
-  const handleGenerateDocument = useCallback(async () => {
-    const token = tokenRef.current
-    if (!token || !activeConversationId) return
-    setIsGeneratingDocument(true)
-    setThreadError(null)
-    try {
-      const doc = await generateDocumentFromConversation(token, activeConversationId)
-      setLatestDocument(doc)
-      if (typeof doc.tokensUsed === 'number') {
-        setProfileTokensUsed(doc.tokensUsed)
-      }
-      await refreshDocuments()
-    } catch (err) {
-      console.error('[documents] generate failed', err)
-      setThreadError(err instanceof Error ? err.message : 'Could not generate application document.')
-    } finally {
-      setIsGeneratingDocument(false)
-    }
-  }, [activeConversationId, refreshDocuments, setProfileTokensUsed])
-
   const sendMessage = useMemo(
     () =>
       createApiChatClient({
@@ -258,41 +267,13 @@ function ChatWorkspace({
 
   return (
     <>
-      <div className="min-w-0 truncate px-4 py-1 text-[11px] text-app-text-dim">
+      <div className="min-w-0 truncate border-b border-app-border/60 px-5 py-1.5 text-[11px] text-app-text-dim">
         {documents.length > 0
-          ? `${documents.length} saved application document${documents.length === 1 ? '' : 's'}`
+          ? `${documents.length} saved draft${documents.length === 1 ? '' : 's'} this account`
           : profile?.plan === 'free'
-            ? 'Free plan: Standard AI + 3 drafts/month. Upgrade for Advanced AI and higher limits.'
-            : 'Chat with agents, then generate an application document'}
+            ? 'Free · Standard AI · 3 application drafts / month'
+            : 'Paid · Advanced AI · higher token and draft limits'}
       </div>
-      {latestDocument && (
-        <div className="shrink-0 border-b border-app-border bg-app-panel-2 px-4 py-2 text-xs text-app-text">
-          <span className="font-semibold">Generated:</span> {latestDocument.title}{' '}
-          <a
-            className="ml-2 underline underline-offset-2"
-            href={latestDocument.downloads.docx}
-            target="_blank"
-            rel="noreferrer"
-          >
-            Download DOCX
-          </a>
-          <a
-            className="ml-3 underline underline-offset-2"
-            href={latestDocument.downloads.md}
-            target="_blank"
-            rel="noreferrer"
-          >
-            Download Markdown
-          </a>
-          <button
-            type="button"
-            className="ml-3 text-app-text-dim hover:text-app-text"
-            onClick={() => setLatestDocument(null)}
-          >
-            Dismiss
-          </button>
-        </div>
-      )}
       <div className="min-h-0 flex-1 p-0">
         {isLoadingThread ? (
           <div className="flex h-full items-center justify-center text-sm text-app-text-dim">
@@ -322,8 +303,10 @@ function ChatWorkspace({
               onSelectConversation={handleSelectConversation}
               onDeleteConversation={(id) => void handleDeleteConversation(id)}
               uploadFile={handleUploadFile}
-              onGenerateDocument={handleGenerateDocument}
-              isGeneratingDocument={isGeneratingDocument}
+              initialDocument={threadDocument}
+              onDocumentChange={() => {
+                void refreshDocuments()
+              }}
               tokenBalance={
                 profile
                   ? { used: profile.tokensUsed, limit: profile.monthlyTokenLimit }
@@ -350,12 +333,16 @@ function AuthenticatedApp({
   setPreferences: (next: UserPreferences) => void
 }) {
   return (
-    <div data-theme={theme} className="flex h-screen flex-col bg-app-bg">
+    <GrantInterviewProvider>
+    <div data-theme={theme} className="workspace-shell flex h-screen flex-col">
       <AppHeader theme={theme} preferences={preferences} />
-      <div className="flex min-h-0 flex-1 flex-col">
+      <div className="flex min-h-0 flex-1">
+      <IconRail />
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
       <Routes>
+        <Route path="/" element={<Navigate to="/chat" replace />} />
         <Route
-          path="/"
+          path="/chat"
           element={
             <ChatWorkspace
               theme={theme}
@@ -364,6 +351,9 @@ function AuthenticatedApp({
             />
           }
         />
+        <Route path="/generator" element={<GeneratorPage />} />
+        <Route path="/grants" element={<GrantsLibraryPage />} />
+        <Route path="/grants/builder" element={<GrantsBuilderPage />} />
         <Route path="/settings" element={<SettingsLayout />}>
           <Route index element={<Navigate to="profile" replace />} />
           <Route path="profile" element={<ProfilePage />} />
@@ -385,7 +375,10 @@ function AuthenticatedApp({
         </Route>
       </Routes>
       </div>
+      </div>
+      <MobileTabBar />
     </div>
+    </GrantInterviewProvider>
   )
 }
 

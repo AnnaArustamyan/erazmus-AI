@@ -136,7 +136,7 @@ alter table public.messages disable row level security;
 
 -- ========== 006_documents.sql ==========
 
--- Documents generated from chat (Markdown source of truth + DOCX export).
+-- Documents generated from chat (Markdown source of truth + PDF primary export + DOCX).
 -- Run in Supabase SQL Editor after 001–005.
 
 create table if not exists public.documents (
@@ -147,6 +147,7 @@ create table if not exists public.documents (
   content_md text not null,
   md_storage_path text not null,
   docx_storage_path text not null,
+  pdf_storage_path text,
   created_at timestamptz not null default now()
 );
 
@@ -196,4 +197,10 @@ alter table public.messages
     agent_id is null
     or agent_id in ('grant', 'compliance', 'budget', 'partner-search', 'report-writer')
   );
+
+
+-- ========== 009_documents_pdf.sql ==========
+
+alter table public.documents
+  add column if not exists pdf_storage_path text;
 

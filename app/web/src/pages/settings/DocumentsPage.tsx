@@ -30,7 +30,7 @@ export function DocumentsPage() {
     }
   }, [accessToken])
 
-  async function download(id: string, format: 'md' | 'docx') {
+  async function download(id: string, format: 'pdf' | 'md' | 'docx') {
     try {
       const url = await getDocumentDownloadUrl(accessToken, id, format)
       window.open(url, '_blank', 'noopener,noreferrer')
@@ -43,8 +43,9 @@ export function DocumentsPage() {
     <div>
       <h1 className="mb-1 text-lg font-semibold">Documents</h1>
       <p className="mb-5 text-sm text-app-text-dim">
-        Generated application drafts (Markdown + DOCX). Cap this month:{' '}
-        {profile?.documentsUsedThisMonth ?? 0} / {profile?.features.monthlyDocumentLimit ?? 3}.
+        Generated application drafts. Download the PDF (DOCX and Markdown are also available). Cap
+        this month: {profile?.documentsUsedThisMonth ?? 0} /{' '}
+        {profile?.features.monthlyDocumentLimit ?? 3}.
       </p>
       {error && (
         <p role="alert" className="mb-3 text-xs text-app-danger">
@@ -54,7 +55,10 @@ export function DocumentsPage() {
       {loading ? (
         <p className="text-sm text-app-text-dim">Loading…</p>
       ) : documents.length === 0 ? (
-        <p className="text-sm text-app-text-dim">No drafts yet. Generate one from a chat.</p>
+        <p className="text-sm text-app-text-dim">
+          No drafts yet. Ask in chat to draft an application — it opens in a canvas you can keep
+          revising.
+        </p>
       ) : (
         <ul className="divide-y divide-app-border rounded-xl border border-app-border">
           {documents.map((doc) => (
@@ -66,6 +70,13 @@ export function DocumentsPage() {
                 </div>
               </div>
               <div className="flex shrink-0 gap-2">
+                <button
+                  type="button"
+                  className="font-medium underline underline-offset-2"
+                  onClick={() => void download(doc.id, 'pdf')}
+                >
+                  PDF
+                </button>
                 <button
                   type="button"
                   className="underline underline-offset-2"
