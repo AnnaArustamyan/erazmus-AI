@@ -209,7 +209,7 @@ describe('POST /api/documents/from-conversation', () => {
     const res = await request(app)
       .post('/api/documents/from-conversation')
       .set('Authorization', 'Bearer t')
-      .send({ conversationId: 'conv-1' });
+      .send({ conversationId: 'conv-1', actionCode: 'KA153' });
 
     expect(res.status).toBe(201);
     expect(res.body.id).toBe('doc-free');
@@ -226,7 +226,7 @@ describe('POST /api/documents/from-conversation', () => {
     const res = await request(app)
       .post('/api/documents/from-conversation')
       .set('Authorization', 'Bearer t')
-      .send({ conversationId: 'conv-1' });
+      .send({ conversationId: 'conv-1', actionCode: 'KA153' });
 
     expect(res.status).toBe(402);
     expect(completeChatForPlanMock).not.toHaveBeenCalled();
@@ -270,7 +270,7 @@ describe('POST /api/documents/from-conversation', () => {
     const res = await request(app)
       .post('/api/documents/from-conversation')
       .set('Authorization', 'Bearer t')
-      .send({ conversationId: 'conv-1' });
+      .send({ conversationId: 'conv-1', actionCode: 'KA153' });
 
     expect(res.status).toBe(201);
     expect(res.body.id).toBe('doc-9');

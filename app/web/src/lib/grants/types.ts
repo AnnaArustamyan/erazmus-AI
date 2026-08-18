@@ -24,6 +24,10 @@ export interface InterviewQuestion {
   options?: InterviewOption[]
   next: string | null
   branches?: { equals: string; goto: string | null }[]
+  characterLimit?: number
+  wordLimit?: number
+  minCharacters?: number
+  factKey?: string
 }
 
 export interface QuestionGraph {
@@ -31,17 +35,36 @@ export interface QuestionGraph {
   questions: Record<string, InterviewQuestion>
 }
 
-export type GrantStatus = 'draft' | 'in_review' | 'complete'
+export type GrantStatus = 'draft' | 'in_review' | 'ready'
+
+export type FactSource = 'questionnaire' | 'chat' | 'document' | 'user'
+export type FactConfidence = 'confirmed' | 'inferred' | 'suggested'
+export type FactStatus = 'locked' | 'pending' | 'stale'
+
+export interface ApplicationFact {
+  key: string
+  value: string | number
+  source: FactSource
+  sourceField?: string
+  confidence: FactConfidence
+  status: FactStatus
+}
 
 export interface GrantApplication {
   id: string
   actionCode: string
+  callYear?: number
   title: string
   status: GrantStatus
   percentComplete: number
   answers: Record<string, string>
+  path?: string[]
+  facts?: ApplicationFact[]
+  sections?: Record<string, string>
   contentMd?: string
   documentId?: string
+  conversationId?: string
+  actionConfirmed?: boolean
   downloads?: { pdf?: string; md?: string; docx?: string }
   createdAt: string
   updatedAt: string
@@ -58,4 +81,4 @@ export interface ProjectPlan {
   updatedAt: string
 }
 
-export type BuilderStep = 'picker' | 'interview' | 'review' | 'result'
+export type BuilderStep = 'picker' | 'workspace' | 'interview' | 'review' | 'result'

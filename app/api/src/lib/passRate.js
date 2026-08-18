@@ -1,9 +1,9 @@
 /**
  * Pass-rate knowledge injection (server-side only).
  *
- * Canonical: derived/rules.md + Guide youth-worker excerpts + anonymized assessments.
- * Full application PDFs are negative examples and are never loaded here.
- * Do not dump the 456-page Guide or 50–60 page applications into the model.
+ * Youth (KA153): derived/rules.md + Guide youth-worker excerpts + assessments.
+ * Other families: thin packs under derived/families/. Never inject KA153
+ * “youth workers” rules into KA152, KA154, KA121/122/131/210/220.
  */
 
 import fs from 'node:fs';
@@ -11,6 +11,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { GENERIC_QUALITY_CONSTRAINTS } from './draftQuality.js';
 import { loadSkillBody } from './skills.js';
+import { familyForAction, inferActionCode, schemaInstruction } from './applicationSchema.js';
 
 export const GUIDE_YEAR = 2026;
 export const GUIDE_VERSION_LABEL = 'Programme Guide 2026 (EN, Version 1, 12/11/2025)';
@@ -68,9 +69,6 @@ const STOP = new Set([
   'application',
 ]);
 
-/**
- * @returns {string}
- */
 function resolveDerivedDir() {
   const here = path.dirname(fileURLToPath(import.meta.url));
   const fromEnv = process.env.KNOWLEDGE_PACK_DIR;
@@ -148,19 +146,24 @@ function loadPack() {
     return { id, title: id, text };
   });
 
+  const familyDir = path.join(dir, 'families');
+  const familyPacks = {
+    ka1_education: clip(readUtf8(path.join(familyDir, 'ka1-education.md')), MAX_RULES_CHARS),
+    ka2: clip(readUtf8(path.join(familyDir, 'ka2.md')), MAX_RULES_CHARS),
+  };
+
   cached = {
     dir,
     rules,
     guide,
     guideSections: splitSections(guide),
     assessments,
+    familyPacks,
   };
   return cached;
 }
 
 /**
- * Short greetings should not pull the full Guide + assessment pack (slow, and
- * the model will dump a blank application). Full retrieval is for drafting.
  * @param {string} latestUserMessage
  */
 export function isLightweightChatQuery(latestUserMessage) {
@@ -172,57 +175,99 @@ export function isLightweightChatQuery(latestUserMessage) {
   );
 }
 
+function isYouthWorkerAssessment(text) {
+  return /\byouth workers?\b/i.test(text) || /\bKA153\b/i.test(text) || /\bMobility of youth workers\b/i.test(text);
+}
+
 /**
- * Always-on award-criteria excerpt plus top matching Guide + failure-mode notes.
  * @param {string} queryText
- * @param {{ compact?: boolean }} [options]
+ * @param {{ compact?: boolean, actionCode?: string | null, familyId?: string | null }} [options]
  */
 export function retrievePassRateContext(queryText, options = {}) {
   const pack = loadPack();
   const queryTokens = tokenize(queryText);
+  const resolvedAction = options.actionCode || inferActionCode(queryText);
+  const familyId = options.familyId || familyForAction(resolvedAction)?.id || null;
+  const ka153Pack = resolvedAction === 'KA153';
 
   const award =
     pack.guideSections.find((s) => /award criteria/i.test(s.title)) ||
     pack.guideSections[0];
 
-  const guideRanked = pack.guideSections
-    .map((s) => ({ ...s, score: scoreText(s.text, queryTokens) }))
-    .filter((s) => s.score > 0 && s.title !== award?.title)
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 2);
+  const guideRanked = ka153Pack
+    ? pack.guideSections
+        .map((s) => ({ ...s, score: scoreText(s.text, queryTokens) }))
+        .filter((s) => s.score > 0 && s.title !== award?.title)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 2)
+    : [];
 
-  const failureRanked = pack.assessments
+  const eligibleAssessments = ka153Pack
+    ? pack.assessments
+    : pack.assessments.filter((s) => !isYouthWorkerAssessment(s.text));
+
+  const failureRanked = eligibleAssessments
     .map((s) => ({ ...s, score: scoreText(s.text, queryTokens) }))
     .sort((a, b) => b.score - a.score);
 
-  const failures = (failureRanked[0]?.score > 0 ? failureRanked.slice(0, 2) : pack.assessments.slice(0, 2)).map(
-    (s) => ({ id: s.id, text: clip(s.text, options.compact ? 400 : 1400) }),
-  );
+  const failures = ka153Pack
+    ? (failureRanked[0]?.score > 0 ? failureRanked.slice(0, 2) : pack.assessments.slice(0, 2)).map(
+        (s) => ({ id: s.id, text: clip(s.text, options.compact ? 400 : 1400) }),
+      )
+    : [];
 
-  const guideParts = [award?.text, ...guideRanked.map((s) => s.text)].filter(Boolean);
+  const guideParts = ka153Pack
+    ? [award?.text, ...guideRanked.map((s) => s.text)].filter(Boolean)
+    : [];
+
+  const familyRules =
+    familyId === 'ka1_education'
+      ? pack.familyPacks.ka1_education
+      : familyId === 'ka2'
+        ? pack.familyPacks.ka2
+        : ka153Pack
+          ? pack.rules
+          : '';
 
   if (options.compact) {
     return {
       guideYear: GUIDE_YEAR,
       guideVersion: GUIDE_VERSION_LABEL,
-      rules: clip(pack.rules, 1800),
+      rules: clip(ka153Pack ? pack.rules : familyRules, 1800),
+      familyRules: familyRules ? clip(familyRules, 1800) : '',
       guideExcerpts: '',
       failureModes: '',
       matchedAssessmentIds: [],
+      familyId,
     };
   }
 
   return {
     guideYear: GUIDE_YEAR,
     guideVersion: GUIDE_VERSION_LABEL,
-    rules: pack.rules,
+    rules: ka153Pack ? pack.rules : familyRules,
+    familyRules,
     guideExcerpts: clip(guideParts.join('\n\n'), MAX_GUIDE_CHARS),
     failureModes: clip(
       failures.map((f) => `### ${f.id}\n${f.text}`).join('\n\n'),
       MAX_FAILURE_CHARS,
     ),
     matchedAssessmentIds: failures.map((f) => f.id),
+    familyId,
   };
+}
+
+/**
+ * KA153 youth-worker pack only for confirmed or recommended KA153.
+ * Project-plan stays generic unless the brief is clearly youth workers.
+ * @param {{ skillName?: string | null, actionCode?: string | null, queryText?: string }} params
+ */
+export function shouldInjectKa153Pack({ skillName, actionCode, queryText } = {}) {
+  if (skillName === 'project-plan') {
+    return /\byouth workers?\b/i.test(queryText || '');
+  }
+  const resolved = actionCode || inferActionCode(queryText);
+  return resolved === 'KA153';
 }
 
 /**
@@ -232,21 +277,16 @@ export function retrievePassRateContext(queryText, options = {}) {
  *   latestUserMessage?: string,
  *   mode?: 'chat' | 'document',
  *   skillName?: string | null,
+ *   actionCode?: string | null,
  * }} params
  */
-function shouldInjectKa153Pack(queryText, skillName) {
-  if (skillName === 'project-plan') {
-    return /\byouth workers?\b/i.test(queryText || '');
-  }
-  return true;
-}
-
 export function buildPassRateSystemPrompt({
   agentSystemPrompt = '',
   queryText,
   latestUserMessage,
   mode = 'chat',
   skillName,
+  actionCode,
 }) {
   const resolvedSkill =
     skillName === undefined
@@ -254,20 +294,38 @@ export function buildPassRateSystemPrompt({
         ? 'application-draft'
         : null
       : skillName;
-  const injectKa153 = shouldInjectKa153Pack(queryText, resolvedSkill);
+  const resolvedAction = actionCode || inferActionCode(queryText);
+  const family = familyForAction(resolvedAction);
+  const injectKa153 = shouldInjectKa153Pack({
+    skillName: resolvedSkill,
+    actionCode: resolvedAction,
+    queryText,
+  });
   const compact =
-    (mode === 'chat' && isLightweightChatQuery(latestUserMessage ?? queryText)) || !injectKa153;
-  const ctx = retrievePassRateContext(queryText, { compact });
+    (mode === 'chat' && isLightweightChatQuery(latestUserMessage ?? queryText)) ||
+    (!injectKa153 && !family);
+  const ctx = retrievePassRateContext(queryText, {
+    compact,
+    actionCode: resolvedAction,
+    familyId: family?.id,
+  });
   const skillBody = resolvedSkill ? loadSkillBody(resolvedSkill) : '';
   const role = skillBody || agentSystemPrompt;
 
   const structureBlock =
     mode === 'chat' && resolvedSkill !== 'application-draft' && resolvedSkill !== 'project-plan'
-      ? `\nIn chat: never dump a blank Who / Where / When / What & How application. Ask questions or draft the one section they asked for.\n`
+      ? `\nIn chat: never dump a blank application skeleton. Ask questions or draft the one section they asked for.\n`
       : '';
 
   const extra = [];
   extra.push(`--- Quality constraints (always apply; all models) ---\n${GENERIC_QUALITY_CONSTRAINTS}`);
+
+  if (resolvedSkill === 'application-draft') {
+    extra.push(
+      `--- Application form sections ---\n${schemaInstruction(resolvedAction)}`,
+    );
+  }
+
   if (injectKa153) {
     extra.push(`--- Pass-rate rules (always apply; hard constraints) ---\n${ctx.rules}`);
     if (ctx.guideExcerpts) {
@@ -278,6 +336,8 @@ export function buildPassRateSystemPrompt({
         `--- Failure modes to avoid (negative examples; internal IDs only; do not copy) ---\n${ctx.failureModes}`,
       );
     }
+  } else if (family && family.id !== 'ka1_youth' && ctx.familyRules) {
+    extra.push(`--- Action-family constraints (${family.label}) ---\n${ctx.familyRules}`);
   }
 
   return `${role}
@@ -286,7 +346,8 @@ You always operate under constrained Erasmus+ pass-rate rules. Prefer retrieval 
 ${structureBlock}
 ${extra.join('\n\n')}
 
-Never mention organisation legal names, official project codes, emails, or people's names. Use internal example IDs (EX-2024-A … EX-2025-E) if you refer to known failure patterns.`;
+Never mention organisation legal names, official project codes, emails, or people's names. Use internal example IDs (EX-2024-A … EX-2025-E) if you refer to known failure patterns.
+Never apply KA153 youth-worker beneficiary rules to KA121, KA122, KA131/171, KA210, or KA220.`;
 }
 
 export function getGuideYear() {

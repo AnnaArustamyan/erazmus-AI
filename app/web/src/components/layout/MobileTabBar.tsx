@@ -1,10 +1,10 @@
 import { NavLink } from 'react-router-dom'
-import { FileStack, MessageSquare, Settings, Sparkles } from 'lucide-react'
+import { ClipboardCheck, FileStack, MessageSquare, Settings } from 'lucide-react'
 
 const TABS = [
   { to: '/chat', label: 'Chat', icon: MessageSquare },
-  { to: '/generator', label: 'Generator', icon: Sparkles },
-  { to: '/grants', label: 'Grants', icon: FileStack },
+  { to: '/grants/builder', label: 'Requirements', icon: ClipboardCheck },
+  { to: '/application', label: 'Application', icon: FileStack },
   { to: '/settings/profile', label: 'Settings', icon: Settings },
 ]
 

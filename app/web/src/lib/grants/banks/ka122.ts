@@ -4,7 +4,7 @@ import type { InterviewQuestion } from '../types'
 const questions: InterviewQuestion[] = [
   {
     id: 'summary',
-    formSection: 'Project description',
+    formSection: 'Objectives and needs',
     formFieldLabel: 'Project summary',
     question: 'In a few sentences, what is this short-term mobility project about?',
     helpText: 'Name the organisations, the destination, who travels, and the professional need it answers.',
@@ -13,7 +13,7 @@ const questions: InterviewQuestion[] = [
   },
   {
     id: 'org_type',
-    formSection: 'Participating organisation',
+    formSection: 'Participants',
     formFieldLabel: 'Organisation type',
     question: 'What type of organisation is applying?',
     type: 'select',
@@ -31,7 +31,7 @@ const questions: InterviewQuestion[] = [
   },
   {
     id: 'needs_school',
-    formSection: 'Needs analysis',
+    formSection: 'Objectives and needs',
     formFieldLabel: 'Identified needs',
     question: 'What needs at your school does this mobility respond to?',
     helpText: 'Reviewers want staff- or learner-level needs, not a generic “we want to internationalise”.',
@@ -40,7 +40,7 @@ const questions: InterviewQuestion[] = [
   },
   {
     id: 'needs_vet',
-    formSection: 'Needs analysis',
+    formSection: 'Objectives and needs',
     formFieldLabel: 'Identified needs',
     question: 'What needs in your VET provision does this mobility respond to?',
     type: 'textarea',
@@ -48,7 +48,7 @@ const questions: InterviewQuestion[] = [
   },
   {
     id: 'needs_adult',
-    formSection: 'Needs analysis',
+    formSection: 'Objectives and needs',
     formFieldLabel: 'Identified needs',
     question: 'What needs among your adult learners or staff does this mobility respond to?',
     type: 'textarea',
@@ -56,7 +56,7 @@ const questions: InterviewQuestion[] = [
   },
   {
     id: 'needs_method',
-    formSection: 'Needs analysis',
+    formSection: 'Objectives and needs',
     formFieldLabel: 'Needs method',
     question: 'How did you identify those needs?',
     helpText: 'Name the method, when you did it, and roughly how many people you asked.',
@@ -71,7 +71,7 @@ const questions: InterviewQuestion[] = [
   },
   {
     id: 'needs_evidence',
-    formSection: 'Needs analysis',
+    formSection: 'Objectives and needs',
     formFieldLabel: 'What people actually said',
     question: 'What did staff or learners actually tell you? Quote or paraphrase the main findings.',
     type: 'textarea',
@@ -79,7 +79,7 @@ const questions: InterviewQuestion[] = [
   },
   {
     id: 'partners',
-    formSection: 'Partnership',
+    formSection: 'Participants',
     formFieldLabel: 'Host organisations',
     question: 'Do you already have a host organisation confirmed?',
     type: 'select',
@@ -97,7 +97,7 @@ const questions: InterviewQuestion[] = [
   },
   {
     id: 'partner_names',
-    formSection: 'Partnership',
+    formSection: 'Participants',
     formFieldLabel: 'Host organisation',
     question: 'Who is the host, in which country, and why this organisation?',
     type: 'textarea',
@@ -105,7 +105,7 @@ const questions: InterviewQuestion[] = [
   },
   {
     id: 'partner_search',
-    formSection: 'Partnership',
+    formSection: 'Participants',
     formFieldLabel: 'Host profile needed',
     question: 'What kind of host are you looking for, and in which country?',
     type: 'textarea',
@@ -113,7 +113,7 @@ const questions: InterviewQuestion[] = [
   },
   {
     id: 'destination',
-    formSection: 'Activities',
+    formSection: 'Activities and learning outcomes',
     formFieldLabel: 'Destination',
     question: 'Which country will the mobility take place in, and why that venue?',
     helpText: 'The venue should normally be in a participating organisation’s country, with a reason.',
@@ -163,7 +163,7 @@ const questions: InterviewQuestion[] = [
   },
   {
     id: 'mobility_type',
-    formSection: 'Activities',
+    formSection: 'Activities and learning outcomes',
     formFieldLabel: 'Type of mobility',
     question: 'What kind of mobility are you organising?',
     type: 'select',
@@ -181,7 +181,7 @@ const questions: InterviewQuestion[] = [
   },
   {
     id: 'activities_staff',
-    formSection: 'Activities',
+    formSection: 'Activities and learning outcomes',
     formFieldLabel: 'Planned activities',
     question: 'What will staff do (job shadowing, a course, teaching assignment)? Outline the programme.',
     type: 'textarea',
@@ -189,7 +189,7 @@ const questions: InterviewQuestion[] = [
   },
   {
     id: 'activities_learners',
-    formSection: 'Activities',
+    formSection: 'Activities and learning outcomes',
     formFieldLabel: 'Planned activities',
     question: 'What will learners do during the mobility? Outline the programme day by day if you can.',
     type: 'textarea',
@@ -197,7 +197,7 @@ const questions: InterviewQuestion[] = [
   },
   {
     id: 'activities_both',
-    formSection: 'Activities',
+    formSection: 'Activities and learning outcomes',
     formFieldLabel: 'Planned activities',
     question: 'Describe staff and learner activities separately, including a rough daily programme.',
     type: 'textarea',
@@ -205,7 +205,7 @@ const questions: InterviewQuestion[] = [
   },
   {
     id: 'duration',
-    formSection: 'Activities',
+    formSection: 'Activities and learning outcomes',
     formFieldLabel: 'Duration and timeframe',
     question: 'When, and for how many days, will the mobility take place?',
     type: 'text',
@@ -213,7 +213,7 @@ const questions: InterviewQuestion[] = [
   },
   {
     id: 'objectives',
-    formSection: 'What & How',
+    formSection: 'Activities and learning outcomes',
     formFieldLabel: 'Objectives',
     question: 'List 3–5 SMART objectives that follow from the needs you described.',
     type: 'textarea',
@@ -221,7 +221,7 @@ const questions: InterviewQuestion[] = [
   },
   {
     id: 'learning_outcomes',
-    formSection: 'What & How',
+    formSection: 'Activities and learning outcomes',
     formFieldLabel: 'Learning outcomes',
     question: 'What knowledge, skills and attitudes should participants bring back into daily work?',
     type: 'textarea',
@@ -229,7 +229,7 @@ const questions: InterviewQuestion[] = [
   },
   {
     id: 'preparation',
-    formSection: 'What & How',
+    formSection: 'Activities and learning outcomes',
     formFieldLabel: 'Preparation',
     question: 'How will you prepare participants (pedagogical, cultural, practical, language)?',
     type: 'textarea',
@@ -237,7 +237,7 @@ const questions: InterviewQuestion[] = [
   },
   {
     id: 'follow_up',
-    formSection: 'What & How',
+    formSection: 'Recognition and follow-up',
     formFieldLabel: 'Follow-up',
     question: 'What happens after they return — who uses the learning, and how will you check it?',
     type: 'textarea',
@@ -245,7 +245,7 @@ const questions: InterviewQuestion[] = [
   },
   {
     id: 'impact',
-    formSection: 'Impact',
+    formSection: 'Recognition and follow-up',
     formFieldLabel: 'Expected impact',
     question: 'What change do you expect, for whom, and how will you know?',
     helpText: 'Name a beneficiary group, a measurable change, and a timeframe.',
@@ -254,7 +254,7 @@ const questions: InterviewQuestion[] = [
   },
   {
     id: 'dissemination',
-    formSection: 'Impact',
+    formSection: 'Recognition and follow-up',
     formFieldLabel: 'Dissemination',
     question: 'Who will you share results with, through which channels, and when?',
     type: 'textarea',
@@ -262,7 +262,7 @@ const questions: InterviewQuestion[] = [
   },
   {
     id: 'risks',
-    formSection: 'Management',
+    formSection: 'Management and accreditation',
     formFieldLabel: 'Risks',
     question: 'Name the main risks and a concrete mitigation for each.',
     type: 'textarea',
@@ -270,7 +270,7 @@ const questions: InterviewQuestion[] = [
   },
   {
     id: 'added_value',
-    formSection: 'Impact',
+    formSection: 'Recognition and follow-up',
     formFieldLabel: 'European added value',
     question: 'Why does this need a European mobility, rather than a local training?',
     type: 'textarea',

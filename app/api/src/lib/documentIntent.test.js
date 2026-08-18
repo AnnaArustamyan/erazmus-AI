@@ -2,14 +2,14 @@ import { describe, it, expect } from 'vitest';
 import { detectDocumentAction } from './documentIntent.js';
 
 describe('detectDocumentAction', () => {
-  it('creates a document when the user asks to draft an application', () => {
+  it('hands off instead of auto-creating a PDF when the user asks to draft', () => {
     expect(detectDocumentAction('Draft a KA153 application for youth workers in Armenia')).toBe(
-      'create',
+      'handoff',
     );
     expect(detectDocumentAction('Please generate the grant application from what we discussed')).toBe(
-      'create',
+      'handoff',
     );
-    expect(detectDocumentAction('Write the application now')).toBe('create');
+    expect(detectDocumentAction('Write the application now')).toBe('handoff');
   });
 
   it('stays in chat for questions and ordinary intake', () => {

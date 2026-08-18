@@ -127,7 +127,7 @@ export function GeneratorPage() {
                 onClick={handleTurnIntoGrant}
                 className="mt-4 text-sm text-app-accent underline"
               >
-                Continue in the grant interview instead
+                Continue in Requirements instead
               </button>
             </div>
           )}

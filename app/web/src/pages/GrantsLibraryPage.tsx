@@ -40,7 +40,7 @@ export function GrantsLibraryPage() {
         <FileStack size={22} className="mb-3 text-app-text-dim" />
         <h1 className="font-display text-lg font-semibold text-app-text">No applications yet</h1>
         <p className="mt-1.5 max-w-md text-center text-sm text-app-text-dim">
-          Answer one question at a time. We write the PDF from your answers at the end.
+          Pick an application to make it active. Chat, Requirements, and My Application all use that same record.
         </p>
         <button
           type="button"
@@ -58,7 +58,7 @@ export function GrantsLibraryPage() {
     <div className="h-full overflow-y-auto px-4 py-8 sm:px-8">
       <div className="mx-auto max-w-5xl">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-          <h1 className="font-display text-lg font-semibold text-app-text">Grant applications</h1>
+          <h1 className="font-display text-lg font-semibold text-app-text">Applications</h1>
           <button
             type="button"
             onClick={startNew}
@@ -89,7 +89,7 @@ export function GrantsLibraryPage() {
             <option value="all">All statuses</option>
             <option value="draft">Draft</option>
             <option value="in_review">In review</option>
-            <option value="complete">Complete</option>
+            <option value="ready">Ready</option>
           </select>
         </div>
         {filtered.length === 0 ? (

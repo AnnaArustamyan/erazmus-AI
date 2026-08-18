@@ -1,134 +1,85 @@
-import { Navigate } from 'react-router-dom'
-import { useAuth } from '../auth/AuthContext'
+import { useEffect, useMemo } from 'react'
+import { Navigate, useSearchParams } from 'react-router-dom'
 import { useGrantInterview } from '../grants/GrantInterviewContext'
-import { QUESTION_GRAPHS } from '../lib/grants/banks'
-import { computeProgress } from '../lib/grants/grantGraph'
-import { answersToMarkdown } from '../lib/grants/answersToMarkdown'
-import { generateDocumentFromInterview } from '../api/documentsClient'
-import { DraftNotReadyError } from '../api/http'
 import { ActionTypePicker } from '../components/grants/ActionTypePicker'
-import { InterviewStep } from '../components/grants/InterviewStep'
-import { ReviewScreen } from '../components/grants/ReviewScreen'
-import { ResultScreen } from '../components/grants/ResultScreen'
+import { RequirementEditor } from '../components/grants/RequirementEditor'
+import { RequirementsWorkspace } from '../components/grants/RequirementsWorkspace'
+import { confirmedActionCode } from '../lib/grants/activeGrant'
+import {
+  buildRequirementItems,
+  completenessPercent,
+  fieldById,
+  fieldsForAction,
+  requirementPath,
+} from '../lib/grants/gaps'
 
 export function GrantsBuilderPage() {
-  const { accessToken } = useAuth()
+  const [params, setParams] = useSearchParams()
   const {
-    step,
-    actionCode,
     grantId,
-    path,
-    currentQuestionId,
     answers,
     grants,
-    isGenerating,
-    generateError,
     selectAction,
-    answerCurrent,
-    goBack,
-    editAnswer,
-    completeWithDocument,
-    setGenerating,
+    answerField,
+    ensureActiveGrant,
   } = useGrantInterview()
 
+  useEffect(() => {
+    ensureActiveGrant()
+  }, [ensureActiveGrant])
+
   const grant = grants.find((row) => row.id === grantId)
+  const actionCode = grant ? confirmedActionCode(grant) : null
+  const editingId = params.get('field')
 
-  async function handleGenerate() {
-    if (!actionCode || !grant) return
-    const graph = QUESTION_GRAPHS[actionCode]
-    const contentMd = answersToMarkdown(actionCode, grant.title, graph, path, answers)
-    setGenerating(true)
-    try {
-      const doc = await generateDocumentFromInterview(accessToken, {
-        actionCode,
-        title: grant.title,
-        contentMd,
-      })
-      completeWithDocument({
-        contentMd: doc.contentMd ?? contentMd,
-        documentId: doc.id,
-        downloads: doc.downloads,
-      })
-    } catch (err) {
-      const message =
-        err instanceof DraftNotReadyError
-          ? [err.message, ...err.gaps].join('\n')
-          : err instanceof Error
-            ? err.message
-            : 'Could not generate the application'
-      setGenerating(false, message)
-    }
-  }
+  const items = useMemo(() => {
+    if (!actionCode) return []
+    return buildRequirementItems({
+      fields: fieldsForAction(actionCode),
+      answers,
+      facts: grant?.facts,
+    })
+  }, [actionCode, answers, grant?.facts])
 
-  if (step === 'picker' || !actionCode) {
+  if (!grant || !actionCode) {
     return (
       <div className="h-full overflow-y-auto px-4 py-10 sm:px-8">
+        <p className="mx-auto mb-6 max-w-3xl text-center text-sm text-app-text-dim">
+          Action is not confirmed yet. That is a gap on this application — Chat will not guess KA152 vs KA153 vs KA154.
+        </p>
         <ActionTypePicker onSelect={(code) => selectAction(code)} />
       </div>
     )
   }
 
-  const graph = QUESTION_GRAPHS[actionCode]
-  if (!graph) return <Navigate to="/grants" replace />
+  const field = editingId ? fieldById(actionCode, editingId) : undefined
+  if (editingId && !field) return <Navigate to={requirementPath()} replace />
 
-  if (isGenerating) {
-    return (
-      <div className="flex h-full flex-col items-center justify-center gap-2 text-sm text-app-text-dim">
-        Writing your application PDF…
-        {generateError && <p className="text-app-danger">{generateError}</p>}
-      </div>
-    )
-  }
-
-  if (generateError) {
-    return (
-      <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
-        <p className="text-sm text-app-danger whitespace-pre-line">{generateError}</p>
-        <button type="button" onClick={() => setGenerating(false)} className="text-sm underline">
-          Back to review
-        </button>
-      </div>
-    )
-  }
-
-  if (step === 'interview' && currentQuestionId) {
-    const question = graph.questions[currentQuestionId]
+  if (field) {
     return (
       <div className="h-full overflow-y-auto px-4 sm:px-8">
-        <InterviewStep
-          question={question}
-          initialValue={answers[currentQuestionId] ?? ''}
-          onSubmit={answerCurrent}
-          onBack={goBack}
-          canGoBack={path.length > 1}
-          progress={computeProgress(graph, path)}
+        <RequirementEditor
+          field={field}
+          value={answers[field.id] ?? ''}
+          completeness={completenessPercent(items)}
+          onSave={(value) => {
+            answerField(field.id, value)
+            setParams({}, { replace: true })
+          }}
+          onBack={() => setParams({}, { replace: true })}
         />
       </div>
     )
   }
 
-  if (step === 'review') {
-    return (
-      <div className="h-full overflow-y-auto px-4 sm:px-8">
-        <ReviewScreen
-          graph={graph}
-          path={path}
-          answers={answers}
-          onEdit={editAnswer}
-          onGenerate={() => void handleGenerate()}
-          isGenerating={isGenerating}
-        />
-      </div>
-    )
-  }
-
-  if (step === 'result' && grant) {
-    return (
-      <div className="h-full overflow-y-auto px-4 sm:px-8">
-        <ResultScreen grant={grant} graph={graph} path={path} />
-      </div>
-    )
-  }
-
-  return <Navigate to="/grants" replace />
+  return (
+    <div className="h-full overflow-y-auto px-4 sm:px-8">
+      <RequirementsWorkspace
+        actionCode={actionCode}
+        callYear={grant.callYear}
+        items={items}
+        onOpen={(fieldId) => setParams({ field: fieldId })}
+      />
+    </div>
+  )
 }

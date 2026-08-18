@@ -12,6 +12,7 @@ import conversationsRoutes from './routes/conversations.js';
 import uploadRoutes from './routes/upload.js';
 import documentsRoutes from './routes/documents.js';
 import plansRoutes from './routes/plans.js';
+import grantsRoutes from './routes/grants.js';
 
 export const app = express();
 
@@ -40,6 +41,7 @@ app.use('/api/conversations', conversationsRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/documents', documentsRoutes);
 app.use('/api/plans', plansRoutes);
+app.use('/api/grants', grantsRoutes);
 
 app.use((req, res) => res.status(404).json({ error: 'Not found' }));
 app.use((err, req, res, next) => {

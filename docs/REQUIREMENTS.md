@@ -1,7 +1,7 @@
 # Erasmus AI — Development Requirements Document
 
-**Version:** 1.1  
-**Date:** 2026-08-10  
+**Version:** 1.2  
+**Date:** 2026-08-17  
 **Status:** Ready for implementation  
 **Audience:** Frontend + backend developers  
 **Owners:** Product  
@@ -25,6 +25,7 @@ This sprint must deliver:
 4. Session that survives refresh
 5. Cost control via quotas and monthly doc caps (not by locking export behind paywall)
 6. **Pass-rate foundation:** Programme Guide + failed-grant examples wired into generation (at least v1 prompts + ingestion path)
+7. **Action scope:** product destination is **KA1 and KA2**. Generate **KA1 only** until KA1 drafts meet the pass-rate bar. KA2 stays visible as Coming soon. Do not ship one action code as the whole product, and do not generate all six actions under a KA153 pack.
 
 ---
 
@@ -92,6 +93,15 @@ Gaps this document closes: docs on Free, settings area, chat message actions, du
 - Upload + analyse files (PDF, TXT, MD) as inputs to chat and generation
 - Clear upgrade path: better model + higher limits (not “unlock export”)
 - Pass-rate system prompts + knowledge ingestion path (Programme Guide + failed examples with feedback)
+- KA1 generation (youth, then education mobility) to the pass-rate bar; KA2 visible as Coming soon
+
+### Action scope (KA1 then KA2)
+
+**FR-ACT-1.** Destination is Key Action 1 (mobility) and Key Action 2 (partnerships). Architecture (`schemaFor(actionCode)`, family packs, picker groups) must already know both.
+
+**FR-ACT-2.** Until the KA1 bar is met, only KA1 actions generate PDFs: youth (KA152 / KA153 / KA154), then education mobility (KA122, KA121, KA131/171). KA210 and KA220 stay in the picker as Coming soon (`supported: false`). Chat may explain KA2; interview and export must refuse it.
+
+**FR-ACT-3.** KA1 is “perfect” when drafts use award-criteria sections (not Who / Where / When), the correct family pack (no KA153 bleed into KA122), correct beneficiary, a needs→objectives→activities chain, and a golden-set / NA-style checklist that would not immediately fail known patterns. Only then open KA2.
 
 ### Out of scope for this sprint
 
@@ -100,6 +110,7 @@ Gaps this document closes: docs on Free, settings area, chat message actions, du
 - AWS migration
 - Rewriting away from Supabase
 - Fully automated scraping of the Guide each year (manual curated pack for v1 is OK; process must be documented)
+- KA2 PDF generation (KA210 / KA220) until FR-ACT-3 is green
 
 ---
 
@@ -221,8 +232,10 @@ Assessments + Guide youth-worker section are **canonical**. Full applications ar
 2. Settings routes + profile / preferences / usage / documents pages  
 3. Chat actions: copy, stop, regenerate, edit and resend  
 4. Session restore on refresh (if not fully solid)  
-5. Pass-rate v1: system prompts + knowledge pack structure + inject into chat/doc generation  
-6. Guided intake agent; expand Programme Guide + failed-grant corpus; yearly refresh runbook  
+5. Pass-rate v1: system prompts + knowledge pack structure keyed by action family (youth pack only on youth)  
+6. Perfect KA1 questionnaire + schema (youth, then education mobility); KA2 Coming soon  
+7. Guided intake depth; expand Guide + failed-grant corpus per family; yearly refresh runbook  
+8. KA2 generation only after the KA1 NA-style checklist is green  
 
 ---
 

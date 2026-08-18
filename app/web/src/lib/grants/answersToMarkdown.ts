@@ -21,7 +21,8 @@ export function answersToMarkdown(
     blocks.push(`## ${section}`, '')
     for (const id of ids) {
       const question = graph.questions[id]
-      const answer = answers[id]?.trim() || '—'
+      const answer = answers[id]?.trim()
+      if (!answer) continue
       blocks.push(`### ${question.formFieldLabel}`, '', answer, '')
     }
   }

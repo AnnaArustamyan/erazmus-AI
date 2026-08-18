@@ -1,18 +1,50 @@
 import { supabaseAdmin } from '../config/supabase.js';
 import { getPlanConfig, startOfUtcMonth } from '../lib/plans.js';
 
+function periodKey(now = new Date()) {
+  return startOfUtcMonth(now).toISOString().slice(0, 10);
+}
+
+function isMissingQuotaColumn(error) {
+  return /quota_period_start/i.test(error?.message ?? '');
+}
+
 /**
  * @param {string} userId
- * @returns {Promise<{ plan: string, monthly_token_limit: number, tokens_used: number } | null>}
+ * @param {Date} [now]
+ * @returns {Promise<{ plan: string, monthly_token_limit: number, tokens_used: number, quota_period_start?: string } | null>}
  */
-export async function getUserQuota(userId) {
-  const { data, error } = await supabaseAdmin
+export async function getUserQuota(userId, now = new Date()) {
+  const withPeriod = await supabaseAdmin
     .from('users')
-    .select('plan, monthly_token_limit, tokens_used')
+    .select('plan, monthly_token_limit, tokens_used, quota_period_start')
     .eq('id', userId)
     .single();
 
+  let data = withPeriod.data;
+  let error = withPeriod.error;
+
+  if (error && isMissingQuotaColumn(error)) {
+    const legacy = await supabaseAdmin
+      .from('users')
+      .select('plan, monthly_token_limit, tokens_used')
+      .eq('id', userId)
+      .single();
+    if (legacy.error || !legacy.data) return null;
+    return legacy.data;
+  }
+
   if (error || !data) return null;
+
+  const month = periodKey(now);
+  const stored = data.quota_period_start ? String(data.quota_period_start).slice(0, 10) : '';
+  if (stored && stored < month) {
+    await supabaseAdmin
+      .from('users')
+      .update({ tokens_used: 0, quota_period_start: month })
+      .eq('id', userId);
+    return { ...data, tokens_used: 0, quota_period_start: month };
+  }
   return data;
 }
 

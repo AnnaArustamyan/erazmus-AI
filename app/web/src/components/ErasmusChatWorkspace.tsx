@@ -61,6 +61,9 @@ export function ErasmusChatWorkspace({
   uploadFile,
   initialDocument = null,
   onDocumentChange,
+  onGenerateFromThread,
+  onStartQuestionnaire,
+  isGeneratingFromThread = false,
   enterToSend = true,
 }: ErasmusChatWorkspaceProps) {
   const [theme, setTheme] = useState<ThemeMode>(initialTheme)
@@ -519,6 +522,25 @@ export function ErasmusChatWorkspace({
             </div>
             {canvasDocument && !canvasOpen && (
               <DocumentCanvasToggle onClick={() => setCanvasOpen(true)} />
+            )}
+            {onStartQuestionnaire && (
+              <button
+                type="button"
+                onClick={onStartQuestionnaire}
+                className="shrink-0 border border-app-border px-2.5 py-1 text-xs text-app-text-dim hover:text-app-text"
+              >
+                Requirements
+              </button>
+            )}
+            {onGenerateFromThread && (
+              <button
+                type="button"
+                onClick={onGenerateFromThread}
+                disabled={isGeneratingFromThread || isSending || messages.length === 0}
+                className="shrink-0 border border-app-accent bg-app-accent px-2.5 py-1 text-xs font-medium text-app-surface disabled:opacity-40"
+              >
+                {isGeneratingFromThread ? 'Generating…' : 'Generate from this thread'}
+              </button>
             )}
           </div>
 

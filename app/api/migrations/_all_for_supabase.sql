@@ -204,3 +204,58 @@ alter table public.messages
 alter table public.documents
   add column if not exists pdf_storage_path text;
 
+
+-- ========== 010_quota_period.sql ==========
+
+alter table public.users
+  add column if not exists quota_period_start date not null default (date_trunc('month', timezone('utc', now())))::date;
+
+
+-- ========== 011_grant_applications.sql ==========
+
+create table if not exists public.grant_applications (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  action_code text not null,
+  title text not null default 'Untitled application',
+  answers jsonb not null default '{}'::jsonb,
+  path text[] not null default '{}',
+  status text not null default 'draft'
+    check (status in ('draft', 'in_review', 'complete')),
+  percent_complete integer not null default 0,
+  document_id uuid references public.documents(id) on delete set null,
+  content_md text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists grant_applications_user_id_updated_at_idx
+  on public.grant_applications (user_id, updated_at desc);
+
+
+-- ========== 012_application_state.sql ==========
+
+alter table public.grant_applications
+  add column if not exists call_year integer not null default 2026,
+  add column if not exists action_confirmed boolean not null default true,
+  add column if not exists conversation_id uuid references public.conversations(id) on delete set null,
+  add column if not exists facts jsonb not null default '[]'::jsonb,
+  add column if not exists sections jsonb not null default '{}'::jsonb,
+  add column if not exists validation_report jsonb,
+  add column if not exists readiness jsonb;
+
+alter table public.grant_applications
+  drop constraint if exists grant_applications_status_check;
+
+alter table public.grant_applications
+  add constraint grant_applications_status_check
+  check (status in ('draft', 'in_review', 'ready', 'complete'));
+
+create index if not exists grant_applications_conversation_id_idx
+  on public.grant_applications (conversation_id)
+  where conversation_id is not null;
+
+
+
+
+

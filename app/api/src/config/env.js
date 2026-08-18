@@ -48,7 +48,7 @@ export const env = {
   openaiModel: read('OPENAI_MODEL') || 'gpt-5.6-luna',
   moonshotApiKey: read('MOONSHOT_API_KEY') || '',
   moonshotBaseUrl: read('MOONSHOT_BASE_URL') || 'https://api.moonshot.ai/v1',
-  moonshotModel: read('MOONSHOT_MODEL') || 'moonshot-v1-8k',
+  moonshotModel: read('MOONSHOT_MODEL') || 'moonshot-v1-128k',
   requireEmailConfirmation: process.env.REQUIRE_EMAIL_CONFIRMATION === 'true',
 };
 

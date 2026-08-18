@@ -14,7 +14,7 @@ export function ActionTypePicker({ onSelect }: { onSelect: (code: string) => voi
       <div className="mb-6 text-center">
         <h1 className="font-display text-xl font-semibold text-app-text">What are you applying for?</h1>
         <p className="mt-1.5 text-sm text-app-text-dim">
-          KA1 mobility and KA2 partnerships. Each answer chooses the next question.
+        KA1 mobility and KA2 partnerships. Confirm the exact action — we will not guess KA152 vs KA153 vs KA154.
         </p>
       </div>
       {groups.map((group) => (

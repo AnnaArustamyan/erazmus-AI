@@ -1,0 +1,199 @@
+{
+  "id": "KA153-YOU-2026-eval-v1",
+  "action": "KA153",
+  "callYear": 2026,
+  "version": 1,
+  "source": "Programme Guide 2026, Part B, Mobility of Youth Workers, Award Criteria",
+  "overallThreshold": 60,
+  "passingCondition": "≥60 total AND ≥50% each criterion",
+  "horizontalPriorities": [
+    {
+      "id": "inclusion",
+      "label": "Inclusion and diversity",
+      "bonusCondition": "Named barriers and support measures in the activity design, not a slogan."
+    },
+    {
+      "id": "green",
+      "label": "Environment and fight against climate change",
+      "bonusCondition": "Sustainable practices in travel, venue, or youth-work content that the programme actually delivers."
+    },
+    {
+      "id": "digital",
+      "label": "Digital transformation",
+      "bonusCondition": "Digital methods used as youth-work practice, not content production as an end in itself."
+    },
+    {
+      "id": "participation",
+      "label": "Participation in democratic life",
+      "bonusCondition": "Youth Dialogue / Youth Goals only where activities actually contribute."
+    }
+  ],
+  "criteria": [
+    {
+      "id": "relevance",
+      "title": "Relevance, rationale and impact",
+      "maxScore": 30,
+      "threshold": 15,
+      "subCriteria": [
+        {
+          "id": "relevance_beneficiary",
+          "description": "Primary participants are youth workers active in participating organisations",
+          "evidenceExpected": [
+            "Youth workers / youth-work staff named as participants",
+            "Link to regular local work with young people after the mobility"
+          ],
+          "mappedFormFields": ["participants.primary_type", "participants.profile"],
+          "source": "Guide 2026 § Mobility of youth workers — Award criteria, Relevance"
+        },
+        {
+          "id": "relevance_needs",
+          "description": "Needs of participating youth workers and organisations, with a method",
+          "evidenceExpected": [
+            "Named method (survey, focus group, interviews)",
+            "When it was done and who was asked",
+            "What youth workers actually said"
+          ],
+          "mappedFormFields": ["needs.method", "needs.analysis", "needs.evidence"],
+          "source": "Guide 2026 § Mobility of youth workers — Award criteria, Relevance"
+        },
+        {
+          "id": "relevance_objectives",
+          "description": "Objectives of this Action: professional development and organisational capacity",
+          "evidenceExpected": [
+            "SMART objectives chained to the needs",
+            "Not tourism, festivals, academic study, or personal wellness as the main aim"
+          ],
+          "mappedFormFields": ["relevance.objectives", "project.summary"],
+          "source": "Guide 2026 § Mobility of youth workers — What the Action is for"
+        },
+        {
+          "id": "relevance_priorities",
+          "description": "EU youth priorities / Youth Goals only where activities deliver them",
+          "evidenceExpected": [
+            "Named priority or Youth Goal",
+            "A sentence showing how the programme delivers it"
+          ],
+          "mappedFormFields": ["priorities.eu"],
+          "source": "Guide 2026 § Mobility of youth workers — Award criteria, Relevance"
+        }
+      ]
+    },
+    {
+      "id": "design",
+      "title": "Quality of project design and implementation",
+      "maxScore": 40,
+      "threshold": 20,
+      "subCriteria": [
+        {
+          "id": "design_consistency",
+          "description": "Consistency between needs, objectives, participant profiles, and activities",
+          "evidenceExpected": [
+            "Same objectives and numbers across sections",
+            "Activities that serve those objectives"
+          ],
+          "mappedFormFields": [
+            "relevance.objectives",
+            "activities.programme",
+            "participants.number",
+            "participants.profile"
+          ],
+          "source": "Guide 2026 § Mobility of youth workers — Award criteria, Design"
+        },
+        {
+          "id": "design_selection",
+          "description": "Participant selection methodology",
+          "evidenceExpected": [
+            "Named selection criteria",
+            "Weightings or priority order",
+            "Who conducts selection"
+          ],
+          "mappedFormFields": ["participants.selection_criteria"],
+          "source": "Guide 2026 §3.1.3 Quality of project design"
+        },
+        {
+          "id": "design_methods",
+          "description": "Appropriate non-formal methods and learning recognition",
+          "evidenceExpected": [
+            "Named non-formal methods",
+            "Learning outcomes as knowledge / skills / attitudes",
+            "Youthpass or equivalent planned"
+          ],
+          "mappedFormFields": [
+            "activities.methods",
+            "activities.learning_outcomes",
+            "activities.youthpass"
+          ],
+          "source": "Guide 2026 § Mobility of youth workers — Award criteria, Design"
+        },
+        {
+          "id": "design_phases",
+          "description": "Preparation, implementation, follow-up with participant involvement",
+          "evidenceExpected": [
+            "Who does what in each phase",
+            "How each phase is evaluated"
+          ],
+          "mappedFormFields": ["activities.preparation"],
+          "source": "Guide 2026 § Mobility of youth workers — Award criteria, Design"
+        },
+        {
+          "id": "design_timetable",
+          "description": "Day-by-day session programme for the PDA",
+          "evidenceExpected": [
+            "Timetable by day and session",
+            "Session count consistent with duration"
+          ],
+          "mappedFormFields": ["annexes.timetable", "activities.duration_days"],
+          "source": "Guide 2026 — Preparatory visits and annexes"
+        },
+        {
+          "id": "design_apv",
+          "description": "Preparatory visit has a session plan if requested",
+          "evidenceExpected": [
+            "Day-by-day APV programme, or a clear statement that no APV is requested"
+          ],
+          "mappedFormFields": ["activities.apv", "annexes.apv_programme"],
+          "source": "Guide 2026 — Preparatory visits"
+        }
+      ]
+    },
+    {
+      "id": "management",
+      "title": "Quality of project management",
+      "maxScore": 30,
+      "threshold": 15,
+      "subCriteria": [
+        {
+          "id": "management_impact",
+          "description": "Realistic impact with indicators and dissemination plan",
+          "evidenceExpected": [
+            "Expected change at the scale of the activity",
+            "Indicator and measurement method",
+            "Target groups, channels, timeline"
+          ],
+          "mappedFormFields": ["management.impact"],
+          "source": "Guide 2026 § Mobility of youth workers — Award criteria, Management"
+        },
+        {
+          "id": "management_safety",
+          "description": "Safety, protection, and practical arrangements",
+          "evidenceExpected": [
+            "Insurance / safeguarding measures",
+            "Practical support for participants"
+          ],
+          "mappedFormFields": ["management.safety"],
+          "source": "Guide 2026 § Mobility of youth workers — Award criteria, Management"
+        },
+        {
+          "id": "management_eval",
+          "description": "Evaluation of phases and outcomes against objectives",
+          "evidenceExpected": [
+            "Evaluation method per phase",
+            "Indicators that match participant numbers"
+          ],
+          "mappedFormFields": ["management.evaluation", "management.roles"],
+          "source": "Guide 2026 § Mobility of youth workers — Award criteria, Management"
+        }
+      ]
+    }
+  ]
+}

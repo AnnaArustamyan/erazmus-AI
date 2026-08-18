@@ -14,7 +14,7 @@ export function ProjectPlanDocument({ plan, onTurnIntoGrant }: ProjectPlanDocume
         <div>
           <h1 className="font-display text-xl font-semibold text-app-text">{plan.title}</h1>
           <p className="mt-1.5 text-sm text-app-text-dim">
-            Strategic plan from your brief. Turn it into a grant interview when you are ready to apply.
+            Strategic plan from your brief. Turn it into Requirements when you are ready to apply.
           </p>
         </div>
         <div className="flex shrink-0 gap-2">

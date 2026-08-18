@@ -26,11 +26,27 @@ export const ACTION_TYPES: ActionType[] = [
     supported: true,
   },
   {
-    code: 'KA152-154',
+    code: 'KA152',
     group: 'KA1',
-    name: 'Youth mobility',
-    description: 'Youth exchanges, youth-worker mobility, and youth participation.',
-    audience: 'Youth organisations',
+    name: 'Youth exchanges',
+    description: 'Mobility of young people. Participants are young people, not youth workers.',
+    audience: 'Youth organisations running exchanges',
+    supported: true,
+  },
+  {
+    code: 'KA153',
+    group: 'KA1',
+    name: 'Mobility of youth workers',
+    description: 'Professional development of youth workers and their organisations.',
+    audience: 'Youth organisations and youth-work providers',
+    supported: true,
+  },
+  {
+    code: 'KA154',
+    group: 'KA1',
+    name: 'Youth participation activities',
+    description: 'Activities that help young people participate in democratic life.',
+    audience: 'Youth organisations and informal groups of young people',
     supported: true,
   },
   {
@@ -39,7 +55,7 @@ export const ACTION_TYPES: ActionType[] = [
     name: 'Small-scale partnerships',
     description: 'Lighter-touch cooperation for newcomers and smaller organisations.',
     audience: 'Grassroots organisations and first-time applicants',
-    supported: true,
+    supported: false,
   },
   {
     code: 'KA220',
@@ -47,7 +63,7 @@ export const ACTION_TYPES: ActionType[] = [
     name: 'Cooperation partnerships',
     description: 'Larger transnational partnerships building shared practices and outputs.',
     audience: 'Established organisations with prior EU project experience',
-    supported: true,
+    supported: false,
   },
 ]
 

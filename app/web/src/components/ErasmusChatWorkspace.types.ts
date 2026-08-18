@@ -112,5 +112,8 @@ export interface ErasmusChatWorkspaceProps {
   uploadFile?: (file: File) => Promise<PendingAttachment>
   initialDocument?: CanvasDocument | null
   onDocumentChange?: (document: CanvasDocument) => void
+  onGenerateFromThread?: () => void
+  onStartQuestionnaire?: () => void
+  isGeneratingFromThread?: boolean
   enterToSend?: boolean
 }

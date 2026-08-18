@@ -5,6 +5,7 @@ interface CreateApiChatClientOptions {
   baseUrl?: string
   getAccessToken: () => string | null
   initialConversationId?: string
+  getActionCode?: () => string | null
   onConversationChange?: (conversationId: string) => void
 }
 
@@ -12,6 +13,7 @@ export function createApiChatClient({
   baseUrl = API_BASE_URL,
   getAccessToken,
   initialConversationId,
+  getActionCode,
   onConversationChange,
 }: CreateApiChatClientOptions): SendMessageFn {
   let conversationId = initialConversationId
@@ -55,6 +57,7 @@ export function createApiChatClient({
           regenerate: regenerate || undefined,
           editMessageId: editMessageId || undefined,
           documentId: documentId || undefined,
+          actionCode: getActionCode?.() || undefined,
         }),
       })
     } catch (err) {
@@ -102,6 +105,7 @@ export function createApiChatClient({
         }
         documentRejected?: boolean
         gaps?: string[]
+        handoff?: boolean
       }
       try {
         event = JSON.parse(payload)

@@ -69,7 +69,8 @@ describe('POST /api/auth/register', () => {
       data: { user: { id: 'u1', email: 'new@example.com' } },
       error: null,
     });
-    queueFromResults(supabaseAdminMock.from, [{ data: null, error: null }]);
+    const insert = vi.fn().mockResolvedValue({ data: null, error: null });
+    supabaseAdminMock.from.mockReturnValue({ insert });
 
     const res = await request(app)
       .post('/api/auth/register')
@@ -78,6 +79,14 @@ describe('POST /api/auth/register', () => {
     expect(res.status).toBe(201);
     expect(res.body).toEqual({ user: { id: 'u1', email: 'new@example.com' } });
     expect(supabaseAdminMock.auth.admin.deleteUser).not.toHaveBeenCalled();
+    expect(insert).toHaveBeenCalledWith({
+      id: 'u1',
+      email: 'new@example.com',
+      name: 'Nick',
+      plan: 'free',
+      monthly_token_limit: 20000,
+      tokens_used: 0,
+    });
   });
 });
 

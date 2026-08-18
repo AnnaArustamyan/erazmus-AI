@@ -4,7 +4,7 @@ import type { InterviewQuestion } from '../types'
 const questions: InterviewQuestion[] = [
   {
     id: 'summary',
-    formSection: 'Project description',
+    formSection: 'Objectives and needs',
     formFieldLabel: 'Mobility plan summary',
     question: 'What mobility are you drawing down against your Erasmus accreditation this round?',
     helpText: 'KA121 is lighter than KA122: you are implementing an accredited plan, not justifying a project from scratch.',
@@ -13,7 +13,7 @@ const questions: InterviewQuestion[] = [
   },
   {
     id: 'accreditation',
-    formSection: 'Participating organisation',
+    formSection: 'Management and accreditation',
     formFieldLabel: 'Accreditation',
     question: 'Do you hold a valid Erasmus accreditation for this field?',
     type: 'select',
@@ -29,7 +29,7 @@ const questions: InterviewQuestion[] = [
   },
   {
     id: 'field',
-    formSection: 'Participating organisation',
+    formSection: 'Objectives and needs',
     formFieldLabel: 'Education field',
     question: 'Which accredited field is this call for?',
     type: 'select',
@@ -42,7 +42,7 @@ const questions: InterviewQuestion[] = [
   },
   {
     id: 'activity_mix',
-    formSection: 'Activities',
+    formSection: 'Activities and learning outcomes',
     formFieldLabel: 'Activity types',
     question: 'Which mobility activities are you requesting this year?',
     type: 'select',
@@ -60,7 +60,7 @@ const questions: InterviewQuestion[] = [
   },
   {
     id: 'staff_activities',
-    formSection: 'Activities',
+    formSection: 'Activities and learning outcomes',
     formFieldLabel: 'Staff activities',
     question: 'Describe the staff mobilities: type, host country, duration, and what they will do.',
     type: 'textarea',
@@ -68,7 +68,7 @@ const questions: InterviewQuestion[] = [
   },
   {
     id: 'learner_gate',
-    formSection: 'Activities',
+    formSection: 'Activities and learning outcomes',
     formFieldLabel: 'Learner activities next',
     question: 'Are learner mobilities part of this request?',
     type: 'select',
@@ -84,7 +84,7 @@ const questions: InterviewQuestion[] = [
   },
   {
     id: 'learner_activities',
-    formSection: 'Activities',
+    formSection: 'Activities and learning outcomes',
     formFieldLabel: 'Learner activities',
     question: 'Describe the learner mobilities: group size, host, duration, and programme.',
     type: 'textarea',
@@ -92,7 +92,7 @@ const questions: InterviewQuestion[] = [
   },
   {
     id: 'destinations',
-    formSection: 'Activities',
+    formSection: 'Activities and learning outcomes',
     formFieldLabel: 'Destinations',
     question: 'Which countries and host organisations, and why these hosts for your accredited objectives?',
     type: 'textarea',
@@ -124,7 +124,7 @@ const questions: InterviewQuestion[] = [
   },
   {
     id: 'objectives',
-    formSection: 'What & How',
+    formSection: 'Activities and learning outcomes',
     formFieldLabel: 'Objectives this year',
     question: 'Which accredited objectives does this year’s mobility advance?',
     type: 'textarea',
@@ -132,15 +132,23 @@ const questions: InterviewQuestion[] = [
   },
   {
     id: 'preparation',
-    formSection: 'What & How',
+    formSection: 'Activities and learning outcomes',
     formFieldLabel: 'Preparation and follow-up',
     question: 'How do you prepare participants and follow up so learning feeds into the organisation?',
+    type: 'textarea',
+    next: 'recognition',
+  },
+  {
+    id: 'recognition',
+    formSection: 'Recognition and follow-up',
+    formFieldLabel: 'Recognition',
+    question: 'How will learning be recognised (certificate, Europass, internal validation, sharing with colleagues)?',
     type: 'textarea',
     next: 'impact',
   },
   {
     id: 'impact',
-    formSection: 'Impact',
+    formSection: 'Recognition and follow-up',
     formFieldLabel: 'Expected impact',
     question: 'What organisational change should this year’s mobilities produce, and how will you see it?',
     type: 'textarea',
@@ -148,7 +156,7 @@ const questions: InterviewQuestion[] = [
   },
   {
     id: 'dissemination',
-    formSection: 'Impact',
+    formSection: 'Recognition and follow-up',
     formFieldLabel: 'Sharing results',
     question: 'How will results be shared inside the organisation and with other accredited peers?',
     type: 'textarea',

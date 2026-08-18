@@ -46,6 +46,6 @@ jobs:
     needs: [api, web]
     steps:
       - uses: actions/checkout@v4
-      - run: docker build -t erasmus-api ./app/api
+      - run: docker build -f app/api/Dockerfile -t erasmus-api .
       - run: docker build -t erasmus-web ./app/web
       - run: docker compose config -q

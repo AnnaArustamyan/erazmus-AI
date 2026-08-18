@@ -125,7 +125,7 @@ export function ChatComposer({
               ? 'Token quota exhausted — upgrade to continue'
               : hasDocument
                 ? 'Tell me which section to change, or ask a question…'
-                : 'Describe your project, partners, or ask me to draft the application…'
+                : 'Ask about criteria, partners, or missing facts. Use Generate from this thread for a PDF.'
           }
           className="max-h-40 min-h-12 w-full resize-none bg-transparent text-[0.95rem] leading-relaxed text-app-text placeholder:text-app-text-dim focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
         />

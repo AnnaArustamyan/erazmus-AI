@@ -50,6 +50,8 @@ router.post('/register', authIpLimiter, async (req, res) => {
   // Also create the row in our own public.users profile table. If this
   // fails we'd otherwise be left with an auth user that can never load a
   // profile via /me — roll the auth user back so registration is atomic.
+  // quota_period_start is omitted: migration 010 gives it a DEFAULT when the
+  // column exists, and older schemas without it would reject the insert.
   const { error: profileError } = await supabaseAdmin.from('users').insert({
     id: data.user.id,
     email: data.user.email,

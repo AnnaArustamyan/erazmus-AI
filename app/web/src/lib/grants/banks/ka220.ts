@@ -4,7 +4,7 @@ import type { InterviewQuestion } from '../types'
 const questions: InterviewQuestion[] = [
   {
     id: 'summary',
-    formSection: 'Project description',
+    formSection: 'Relevance',
     formFieldLabel: 'Project summary',
     question: 'What is this cooperation partnership about?',
     helpText: 'KA220 is a larger transnational partnership with work packages and shared results — not a mobility project.',
@@ -13,7 +13,7 @@ const questions: InterviewQuestion[] = [
   },
   {
     id: 'field',
-    formSection: 'Project description',
+    formSection: 'Relevance',
     formFieldLabel: 'Field',
     question: 'Which field will you apply under?',
     type: 'select',
@@ -28,7 +28,7 @@ const questions: InterviewQuestion[] = [
   },
   {
     id: 'partners',
-    formSection: 'Partnership',
+    formSection: 'Quality of partnership',
     formFieldLabel: 'Consortium',
     question: 'How many partners, from which countries, and who coordinates?',
     helpText: 'You need organisations from at least two Programme countries at application stage.',
@@ -37,7 +37,7 @@ const questions: InterviewQuestion[] = [
   },
   {
     id: 'partner_roles',
-    formSection: 'Partnership',
+    formSection: 'Quality of partnership',
     formFieldLabel: 'Partner roles',
     question: 'Why these partners, and what does each one contribute (expertise, target group, delivery)?',
     type: 'textarea',
@@ -45,7 +45,7 @@ const questions: InterviewQuestion[] = [
   },
   {
     id: 'duration',
-    formSection: 'Activities',
+    formSection: 'Design and work packages',
     formFieldLabel: 'Duration',
     question: 'Project length and planned start (typically 12–36 months).',
     type: 'text',
@@ -53,7 +53,7 @@ const questions: InterviewQuestion[] = [
   },
   {
     id: 'priority',
-    formSection: 'Priorities',
+    formSection: 'Relevance',
     formFieldLabel: 'Priorities',
     question: 'Which horizontal and sectoral priorities will you address — and how do the activities actually deliver them?',
     type: 'textarea',
@@ -61,7 +61,7 @@ const questions: InterviewQuestion[] = [
   },
   {
     id: 'needs',
-    formSection: 'Needs analysis',
+    formSection: 'Relevance',
     formFieldLabel: 'Needs',
     question: 'What need does the partnership address, with evidence per organisation or target group?',
     type: 'textarea',
@@ -69,7 +69,7 @@ const questions: InterviewQuestion[] = [
   },
   {
     id: 'objectives',
-    formSection: 'What & How',
+    formSection: 'Design and work packages',
     formFieldLabel: 'Objectives',
     question: 'SMART objectives chained to those needs. Same list everywhere in the application.',
     type: 'textarea',
@@ -77,7 +77,7 @@ const questions: InterviewQuestion[] = [
   },
   {
     id: 'work_packages',
-    formSection: 'Activities',
+    formSection: 'Design and work packages',
     formFieldLabel: 'Work packages',
     question: 'Outline the work packages: purpose, lead partner, main tasks, and timing.',
     type: 'textarea',
@@ -85,7 +85,7 @@ const questions: InterviewQuestion[] = [
   },
   {
     id: 'results',
-    formSection: 'What & How',
+    formSection: 'Design and work packages',
     formFieldLabel: 'Results and outputs',
     question: 'What concrete results will exist, who can reuse them, and under what licence or access?',
     type: 'textarea',

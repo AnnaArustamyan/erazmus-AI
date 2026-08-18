@@ -13,10 +13,12 @@ import {
   type ConversationSummary as ApiConversationSummary,
 } from './api/conversationsClient'
 import {
+  generateDocumentFromConversation,
   getDocumentForConversation,
   listDocuments,
   type DocumentSummary,
 } from './api/documentsClient'
+import { DraftNotReadyError } from './api/http'
 import type {
   AgentId,
   CanvasDocument,
@@ -26,7 +28,6 @@ import type {
 } from './components/ErasmusChatWorkspace.types'
 import { DEFAULT_AGENT_ID } from './components/chat/agents'
 import {
-  loadActiveConversationId,
   loadPreferences,
   saveActiveConversationId,
   savePreferences,
@@ -39,9 +40,12 @@ import { UsagePage } from './pages/settings/UsagePage'
 import { SecurityPage } from './pages/settings/SecurityPage'
 import { DocumentsPage } from './pages/settings/DocumentsPage'
 import { GeneratorPage } from './pages/GeneratorPage'
+import { ApplicationPage } from './pages/ApplicationPage'
 import { GrantsLibraryPage } from './pages/GrantsLibraryPage'
 import { GrantsBuilderPage } from './pages/GrantsBuilderPage'
-import { GrantInterviewProvider } from './grants/GrantInterviewContext'
+import { GrantInterviewProvider, useGrantInterview } from './grants/GrantInterviewContext'
+import { grantForConversation } from './lib/grants/activeGrant'
+import { ApplicationSwitcher } from './components/layout/ApplicationSwitcher'
 import { IconRail } from './components/layout/IconRail'
 import { MobileTabBar } from './components/layout/MobileTabBar'
 
@@ -64,10 +68,11 @@ function AppHeader({
       <button
         type="button"
         onClick={() => navigate('/')}
-        className="min-w-0 truncate text-left text-xs text-app-text-dim hover:text-app-text"
+        className="hidden min-w-0 truncate text-left text-xs text-app-text-dim hover:text-app-text sm:block"
       >
-        Erasmus+ KA1 & KA2 · Guide-aligned drafting
+        Erasmus+ KA1 & KA2
       </button>
+      <ApplicationSwitcher />
       <ProfileMenu
         name={profile?.name ?? null}
         email={profile?.email ?? user?.email ?? ''}
@@ -94,8 +99,20 @@ function ChatWorkspace({
   enterToSend: boolean
 }) {
   const { accessToken, profile, setProfileTokensUsed } = useAuth()
+  const {
+    actionCode: grantActionCode,
+    activeGrant,
+    ensureActiveGrant,
+    setActiveGrant,
+    linkConversation,
+    grants,
+  } = useGrantInterview()
   const tokenRef = useRef(accessToken)
   tokenRef.current = accessToken
+  const actionRef = useRef(grantActionCode)
+  actionRef.current = grantActionCode
+  const grantStateRef = useRef({ grants, activeGrant, setActiveGrant, linkConversation })
+  grantStateRef.current = { grants, activeGrant, setActiveGrant, linkConversation }
   const location = useLocation()
   const navigate = useNavigate()
 
@@ -108,6 +125,7 @@ function ChatWorkspace({
   const [workspaceKey, setWorkspaceKey] = useState(0)
   const [threadDocument, setThreadDocument] = useState<CanvasDocument | null>(null)
   const [documents, setDocuments] = useState<DocumentSummary[]>([])
+  const [isGeneratingFromThread, setIsGeneratingFromThread] = useState(false)
 
   const refreshConversations = useCallback(async () => {
     const token = tokenRef.current
@@ -186,6 +204,10 @@ function ChatWorkspace({
   }, [])
 
   useEffect(() => {
+    ensureActiveGrant()
+  }, [ensureActiveGrant])
+
+  useEffect(() => {
     if (!accessToken) return
     let cancelled = false
     ;(async () => {
@@ -195,17 +217,17 @@ function ChatWorkspace({
       })
       if (cancelled) return
       setConversations(list.map(toSummary))
-      const remembered = loadActiveConversationId()
-      const initialId =
-        (remembered && list.some((c) => c.id === remembered) ? remembered : undefined) ??
-        list[0]?.id
-      await openConversation(initialId)
       await refreshDocuments()
     })()
     return () => {
       cancelled = true
     }
-  }, [accessToken])
+  }, [accessToken, refreshDocuments])
+
+  useEffect(() => {
+    if (!activeGrant) return
+    void openConversation(activeGrant.conversationId)
+  }, [activeGrant?.id, openConversation])
 
   const handleNewChat = useCallback(() => {
     void openConversation(undefined)
@@ -221,9 +243,12 @@ function ChatWorkspace({
   const handleSelectConversation = useCallback(
     (id: string) => {
       if (id === activeConversationId) return
+      const owner = grantForConversation(grants, id)
+      if (owner) setActiveGrant(owner.id)
+      else linkConversation(id)
       void openConversation(id)
     },
-    [activeConversationId, openConversation],
+    [activeConversationId, grants, linkConversation, openConversation, setActiveGrant],
   )
 
   const handleDeleteConversation = useCallback(
@@ -256,10 +281,14 @@ function ChatWorkspace({
       createApiChatClient({
         getAccessToken: () => tokenRef.current,
         initialConversationId: activeConversationId,
+        getActionCode: () => actionRef.current,
         onConversationChange: (id) => {
           setActiveConversationId(id)
           saveActiveConversationId(id)
           void refreshConversations()
+          const owner = grantForConversation(grantStateRef.current.grants, id)
+          if (owner) grantStateRef.current.setActiveGrant(owner.id)
+          else grantStateRef.current.linkConversation(id)
         },
       }),
     [workspaceKey],
@@ -268,11 +297,13 @@ function ChatWorkspace({
   return (
     <>
       <div className="min-w-0 truncate border-b border-app-border/60 px-5 py-1.5 text-[11px] text-app-text-dim">
-        {documents.length > 0
-          ? `${documents.length} saved draft${documents.length === 1 ? '' : 's'} this account`
-          : profile?.plan === 'free'
-            ? 'Free · Standard AI · 3 application drafts / month'
-            : 'Paid · Advanced AI · higher token and draft limits'}
+        {activeGrant
+          ? `Active application: ${activeGrant.title}`
+          : documents.length > 0
+            ? `${documents.length} saved draft${documents.length === 1 ? '' : 's'} this account`
+            : profile?.plan === 'free'
+              ? 'Free · Standard AI · 3 application drafts / month'
+              : 'Paid · Advanced AI · higher token and draft limits'}
       </div>
       <div className="min-h-0 flex-1 p-0">
         {isLoadingThread ? (
@@ -304,9 +335,49 @@ function ChatWorkspace({
               onDeleteConversation={(id) => void handleDeleteConversation(id)}
               uploadFile={handleUploadFile}
               initialDocument={threadDocument}
-              onDocumentChange={() => {
+              onDocumentChange={(doc) => {
+                setThreadDocument(doc)
                 void refreshDocuments()
               }}
+              onGenerateFromThread={() => {
+                void (async () => {
+                  const token = tokenRef.current
+                  if (!token || !activeConversationId) return
+                  setIsGeneratingFromThread(true)
+                  setThreadError(null)
+                  try {
+                    const doc = await generateDocumentFromConversation(
+                      token,
+                      activeConversationId,
+                      actionRef.current ?? undefined,
+                    )
+                    setThreadDocument({
+                      id: doc.id,
+                      title: doc.title,
+                      conversationId: doc.conversationId,
+                      contentMd: doc.contentMd ?? '',
+                      createdAt: doc.createdAt,
+                      downloads: doc.downloads,
+                    })
+                    void refreshDocuments()
+                  } catch (err) {
+                    if (err instanceof DraftNotReadyError) {
+                      setThreadError([err.message, ...err.gaps].join(' '))
+                    } else {
+                      setThreadError(
+                        err instanceof Error ? err.message : 'Could not generate from this thread.',
+                      )
+                    }
+                  } finally {
+                    setIsGeneratingFromThread(false)
+                  }
+                })()
+              }}
+              onStartQuestionnaire={() => {
+                ensureActiveGrant()
+                navigate('/grants/builder')
+              }}
+              isGeneratingFromThread={isGeneratingFromThread}
               tokenBalance={
                 profile
                   ? { used: profile.tokensUsed, limit: profile.monthlyTokenLimit }
@@ -352,6 +423,7 @@ function AuthenticatedApp({
           }
         />
         <Route path="/generator" element={<GeneratorPage />} />
+        <Route path="/application" element={<ApplicationPage />} />
         <Route path="/grants" element={<GrantsLibraryPage />} />
         <Route path="/grants/builder" element={<GrantsBuilderPage />} />
         <Route path="/settings" element={<SettingsLayout />}>

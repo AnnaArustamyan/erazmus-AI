@@ -1,26 +1,26 @@
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
-import { FileStack, MessageSquare, Plus, Sparkles } from 'lucide-react'
+import { ClipboardCheck, FileStack, MessageSquare, Plus } from 'lucide-react'
 import { useGrantInterview } from '../../grants/GrantInterviewContext'
 
 const NAV = [
   { to: '/chat', label: 'Chat', icon: MessageSquare },
-  { to: '/generator', label: 'Generator', icon: Sparkles },
-  { to: '/grants', label: 'Grants', icon: FileStack },
+  { to: '/grants/builder', label: 'Requirements', icon: ClipboardCheck },
+  { to: '/application', label: 'My Application', icon: FileStack },
 ]
 
 export function IconRail() {
   const location = useLocation()
   const navigate = useNavigate()
-  const resetInterview = useGrantInterview().reset
+  const { startNewApplication } = useGrantInterview()
 
   function handleNew() {
-    if (location.pathname.startsWith('/generator')) {
-      navigate('/generator', { state: { reset: true } })
+    startNewApplication()
+    if (location.pathname.startsWith('/grants')) {
+      navigate('/grants/builder')
       return
     }
-    if (location.pathname.startsWith('/grants')) {
-      resetInterview()
-      navigate('/grants/builder')
+    if (location.pathname.startsWith('/application')) {
+      navigate('/application')
       return
     }
     navigate('/chat', { state: { newChat: true } })
@@ -48,7 +48,9 @@ export function IconRail() {
               title={label}
               className={({ isActive }) =>
                 `flex h-10 w-10 items-center justify-center text-app-text-dim hover:bg-app-panel-2 hover:text-app-text focus-visible:outline-2 focus-visible:outline-app-accent focus-visible:outline-offset-2 ${
-                  isActive ? 'bg-app-accent-soft text-app-accent' : ''
+                  isActive || (to === '/grants/builder' && location.pathname.startsWith('/grants'))
+                    ? 'bg-app-accent-soft text-app-accent'
+                    : ''
                 }`
               }
             >

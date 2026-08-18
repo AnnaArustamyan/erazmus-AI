@@ -12,6 +12,11 @@ import {
   toNotReadyPayload,
 } from '../lib/draftQuality.js';
 import { buildPassRateSystemPrompt } from '../lib/passRate.js';
+import { requireConfirmedAction } from '../lib/actionLock.js';
+import { factsFromAnswers, KA153_MINIMUM_FACTS, missingGenerationFacts, normalizeFacts } from '../lib/facts.js';
+import { flattenFormFields, loadFormSchema } from '../lib/formSchemas.js';
+import { validateApplication } from '../lib/validateApplication.js';
+import { loadAttachmentExcerpt } from '../lib/extractAttachmentText.js';
 import { getPlanConfig } from '../lib/plans.js';
 import {
   createDocumentRecord,
@@ -122,10 +127,15 @@ router.get('/', verifyAuth, async (req, res) => {
  * All plans; Free → Luna, paid → Moonshot. Same pass-rate constraints.
  */
 router.post('/from-conversation', verifyAuth, async (req, res) => {
-  const { conversationId, title } = req.body ?? {};
+  const { conversationId, title, actionCode: rawAction } = req.body ?? {};
   if (!conversationId || typeof conversationId !== 'string') {
     return res.status(400).json({ error: 'conversationId is required' });
   }
+  const lock = requireConfirmedAction(rawAction);
+  if (!lock.ok) {
+    return res.status(lock.status).json({ error: lock.error, code: lock.code });
+  }
+  const actionCode = lock.actionCode;
 
   const profile = await getUserQuota(req.user.id);
   if (!profile) return res.status(404).json({ error: 'Profile not found' });
@@ -151,7 +161,7 @@ router.post('/from-conversation', verifyAuth, async (req, res) => {
 
   const { data: history, error: historyError } = await supabaseAdmin
     .from('messages')
-    .select('role, content, agent_id')
+    .select('role, content, agent_id, attachment_path, attachment_name')
     .eq('conversation_id', conversation.id)
     .order('created_at', { ascending: true })
     .limit(planConfig.maxHistoryMessages);
@@ -163,9 +173,18 @@ router.post('/from-conversation', verifyAuth, async (req, res) => {
     return res.status(400).json({ error: 'Conversation has no messages to draft from' });
   }
 
-  const transcript = history
-    .map((m) => `${m.role}${m.agent_id ? ` (${m.agent_id})` : ''}: ${m.content}`)
-    .join('\n\n');
+  const parts = [];
+  for (const m of history) {
+    let block = `${m.role}${m.agent_id ? ` (${m.agent_id})` : ''}: ${m.content}`;
+    if (m.attachment_path) {
+      const excerpt = await loadAttachmentExcerpt(supabaseAdmin, m.attachment_path, {
+        filename: m.attachment_name,
+      });
+      if (excerpt) block = `${block}\n\n${excerpt}`;
+    }
+    parts.push(block);
+  }
+  const transcript = parts.join('\n\n');
 
   let contentMd;
   let totalTokens = 0;
@@ -179,11 +198,12 @@ router.post('/from-conversation', verifyAuth, async (req, res) => {
             queryText: transcript,
             mode: 'document',
             skillName: 'application-draft',
+            actionCode,
           }),
         },
         {
           role: 'user',
-          content: `Draft an Erasmus+ application from this conversation transcript. Match the action type discussed (KA1 or KA2). Use only facts in the transcript. If it is not ready, output the short Not ready to draft note — never a document of blank "—" fields.\n\n${transcript}`,
+          content: `Draft an Erasmus+ ${actionCode} application from this conversation transcript. The action code is user-confirmed. Use only facts in the transcript. If it is not ready, output the short Not ready to draft note — never a document of blank "—" fields.\n\n${transcript}`,
         },
       ],
     });
@@ -237,12 +257,44 @@ router.post('/from-conversation', verifyAuth, async (req, res) => {
  * Turns questionnaire answers into a pass-rate application PDF.
  */
 router.post('/from-interview', verifyAuth, async (req, res) => {
-  const { actionCode, title, contentMd: interviewMd } = req.body ?? {};
+  const { actionCode, title, contentMd: interviewMd, answers, facts } = req.body ?? {};
   if (typeof interviewMd !== 'string' || !interviewMd.trim()) {
     return res.status(400).json({ error: 'contentMd is required' });
   }
-  if (typeof actionCode !== 'string' || !actionCode.trim()) {
-    return res.status(400).json({ error: 'actionCode is required' });
+  const lock = requireConfirmedAction(actionCode);
+  if (!lock.ok) {
+    return res.status(lock.status).json({ error: lock.error, code: lock.code });
+  }
+
+  const schema = loadFormSchema(lock.actionCode);
+  const resolvedAnswers = answers && typeof answers === 'object' ? answers : {};
+  const resolvedFacts = Array.isArray(facts)
+    ? normalizeFacts(facts)
+    : schema
+      ? factsFromAnswers(flattenFormFields(schema), resolvedAnswers)
+      : [];
+  if (schema) {
+    const report = validateApplication({
+      actionCode: lock.actionCode,
+      answers: resolvedAnswers,
+      facts: resolvedFacts,
+    });
+    const blocking = report.findings.filter((f) => f.level === 'critical');
+    const missing = missingGenerationFacts(resolvedFacts, schema.minimumFacts || KA153_MINIMUM_FACTS);
+    if (blocking.length || missing.length) {
+      return res.status(422).json({
+        error:
+          'This application is not ready to generate. Confirm missing facts and fix critical issues first. The model will not invent them.',
+        code: 'DRAFT_NOT_READY',
+        gaps: [
+          ...missing.map((key) => `Confirmed fact required: ${key}`),
+          ...blocking.map((f) => f.message),
+        ],
+        findings: blocking,
+        readiness: report.readiness,
+        knownFacts: resolvedFacts.filter((f) => f.status === 'locked').map((f) => `${f.key}=${f.value}`),
+      });
+    }
   }
 
   const profile = await getUserQuota(req.user.id);
@@ -270,6 +322,7 @@ router.post('/from-interview', verifyAuth, async (req, res) => {
             queryText: interviewMd,
             mode: 'document',
             skillName: 'application-draft',
+            actionCode,
           }),
         },
         {

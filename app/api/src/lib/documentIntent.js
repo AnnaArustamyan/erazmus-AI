@@ -4,17 +4,22 @@ const CREATE_VERB = /\b(generate|draft|write|create|prepare|produce|build|start)
 const REVISE_VERB =
   /\b(update|revise|change|edit|rewrite|expand|shorten|add|fix|improve|strengthen|replace|fill in|tweak|adjust|expand on)\b/i;
 const SECTION =
-  /\b(who|where|when|what & how|objectives?|activit(?:y|ies)|methodology|impact|dissemination|partners?|timeline|annex(?:es)?|needs analysis)\b/i;
+  /\b(relevance|design|management|partnership|who|where|when|what & how|objectives?|activit(?:y|ies)|methodology|impact|dissemination|partners?|timeline|annex(?:es)?|needs analysis|work packages?)\b/i;
 const QUESTION =
   /^(how (do|can|should|to)|what (is|are|does|do)|why |can you explain|tell me (about|how)|who (is|are) you)\b/i;
 
+export const HANDOFF_INSTRUCTION = `The user asked to generate a full application. Do NOT draft a PDF, dump a section skeleton, or write Who / Where / When / What & How.
+List the facts still missing as a short checklist (occupational field, evidenced need, who takes part and how they are selected, what they will do, host/partners, assessment).
+Then tell them: the grant questionnaire is the reliable path; they can also use Generate from this thread — unknown facts will be marked as gaps, not invented.`;
+
 /**
- * Decide whether this user turn should create a document, revise the open one,
- * or stay in ordinary chat.
+ * Decide whether this user turn should revise an open document, hand off to
+ * explicit generate / questionnaire, or stay in ordinary chat.
+ * Chat never auto-creates a PDF from regex.
  *
  * @param {string} message
  * @param {{ hasDocument?: boolean }} [options]
- * @returns {'create' | 'revise' | 'chat'}
+ * @returns {'handoff' | 'revise' | 'chat'}
  */
 export function detectDocumentAction(message, options = {}) {
   const text = (message || '').trim();
@@ -31,7 +36,7 @@ export function detectDocumentAction(message, options = {}) {
       (DOC_NOUN.test(text) && REVISE_VERB.test(text)));
 
   if (hasDocument && (wantsCreate || wantsRevise)) return 'revise';
-  if (wantsCreate) return 'create';
+  if (wantsCreate) return 'handoff';
   return 'chat';
 }
 

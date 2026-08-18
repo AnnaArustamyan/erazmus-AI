@@ -41,12 +41,13 @@ export async function getDocumentForConversation(
 export async function generateDocumentFromConversation(
   accessToken: string | null,
   conversationId: string,
+  actionCode?: string,
 ): Promise<GeneratedDocument> {
   const res = await apiFetch('/api/documents/from-conversation', {
     method: 'POST',
     accessToken,
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ conversationId }),
+    body: JSON.stringify({ conversationId, actionCode }),
   })
   await throwIfNotOk(res, 'Could not generate document')
   return (await res.json()) as GeneratedDocument
@@ -54,7 +55,13 @@ export async function generateDocumentFromConversation(
 
 export async function generateDocumentFromInterview(
   accessToken: string | null,
-  input: { actionCode: string; title: string; contentMd: string },
+  input: {
+    actionCode: string
+    title: string
+    contentMd: string
+    answers?: Record<string, string>
+    facts?: import('../lib/grants/types').ApplicationFact[]
+  },
 ): Promise<GeneratedDocument> {
   const res = await apiFetch('/api/documents/from-interview', {
     method: 'POST',

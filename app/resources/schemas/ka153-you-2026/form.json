@@ -1,0 +1,360 @@
+{
+  "id": "KA153-YOU-2026-form-v1",
+  "action": "KA153",
+  "callYear": 2026,
+  "version": 1,
+  "source": "Programme Guide 2026 (EN, Version 1, 12/11/2025) Part B, Mobility of Youth Workers; form structure observed from the 2026 official application environment (encoded by hand, not scraped).",
+  "eligibility": {
+    "minPartners": 2,
+    "minDurationDays": 2,
+    "maxDurationDays": 60,
+    "maxParticipantsPerActivity": 50,
+    "beneficiary": "youth_workers",
+    "source": "Guide 2026, Mobility projects for youth workers"
+  },
+  "minimumFacts": [
+    "participant_count",
+    "participating_organisations",
+    "countries",
+    "activity_duration_days",
+    "needs_method",
+    "selection_criteria",
+    "venue_country"
+  ],
+  "annexes": [
+    {
+      "id": "annexes.timetable",
+      "label": "Day-by-day timetable",
+      "required": true,
+      "description": "Detailed timetable by day and session for every professional development activity."
+    },
+    {
+      "id": "annexes.apv_programme",
+      "label": "APV session programme",
+      "required": false,
+      "conditionalOn": { "field": "activities.apv", "equals": "yes" },
+      "description": "Required if a preparatory visit is requested. Reviewers will not fund an APV without a session plan."
+    }
+  ],
+  "sections": [
+    {
+      "id": "project",
+      "title": "Relevance",
+      "fields": [
+        {
+          "id": "project.summary",
+          "label": "Project summary",
+          "type": "textarea",
+          "required": true,
+          "characterLimit": 2000,
+          "minCharacters": 80,
+          "question": "In a few sentences, what is this youth-worker mobility about?",
+          "helpText": "Name the organisations, who takes part (youth workers, not young people), and the professional need it answers."
+        },
+        {
+          "id": "organisations.applicant",
+          "label": "Applicant organisation",
+          "type": "textarea",
+          "required": true,
+          "characterLimit": 1500,
+          "minCharacters": 40,
+          "question": "Who is applying? Organisation type, country, and what youth work you already do.",
+          "helpText": "The applicant profile must be relevant to youth work — Guide 2026 Relevance criterion."
+        },
+        {
+          "id": "organisations.partners",
+          "label": "Participating organisations",
+          "type": "textarea",
+          "required": true,
+          "characterLimit": 2500,
+          "minCharacters": 40,
+          "factKey": "participating_organisations",
+          "question": "Who are the partner organisations, and how many are they (including you)?",
+          "helpText": "At least two organisations from different countries. State sending/receiving roles. Do not invent a host."
+        },
+        {
+          "id": "organisations.countries",
+          "label": "Countries",
+          "type": "text",
+          "required": true,
+          "characterLimit": 400,
+          "factKey": "countries",
+          "question": "Which countries take part?",
+          "helpText": "List the countries of participating organisations. The venue must be in one of these."
+        },
+        {
+          "id": "participants.primary_type",
+          "label": "Primary participants",
+          "type": "select",
+          "required": true,
+          "question": "Who are the primary participants of the activity itself?",
+          "helpText": "For KA153 this must be youth workers, not young people. Young people benefit afterwards through better youth work.",
+          "options": [
+            { "value": "youth_workers", "label": "Youth workers / youth-work staff of the participating organisations" },
+            { "value": "young_people", "label": "Young people (typically 13–30) as the course participants" },
+            { "value": "mixed", "label": "A mix — you will explain in the profile answer" }
+          ]
+        },
+        {
+          "id": "needs.analysis",
+          "label": "Needs analysis",
+          "type": "textarea",
+          "required": true,
+          "characterLimit": 5000,
+          "minCharacters": 200,
+          "question": "What development needs of youth workers and their organisations does this respond to?",
+          "helpText": "Needs must be at youth-worker and organisation level, not “young people use social media”. Evidence per participating organisation."
+        },
+        {
+          "id": "needs.method",
+          "label": "Needs method",
+          "type": "select",
+          "required": true,
+          "factKey": "needs_method",
+          "question": "How did you identify those needs?",
+          "helpText": "Name a method. “We know from experience” is not enough.",
+          "options": [
+            { "value": "survey", "label": "Survey of youth workers / staff" },
+            { "value": "focus_group", "label": "Focus groups or interviews" },
+            { "value": "mixed", "label": "A mix of survey, interviews, and organisational records" },
+            { "value": "none", "label": "No formal method yet" }
+          ]
+        },
+        {
+          "id": "needs.evidence",
+          "label": "Needs evidence",
+          "type": "textarea",
+          "required": true,
+          "characterLimit": 3000,
+          "minCharacters": 80,
+          "question": "What did youth workers actually tell you? Method, when, who you asked, and the main findings.",
+          "helpText": "Cite dates, sample size, and what people said. Do not invent survey results."
+        },
+        {
+          "id": "priorities.eu",
+          "label": "EU priorities and Youth Goals",
+          "type": "textarea",
+          "required": true,
+          "characterLimit": 2000,
+          "minCharacters": 40,
+          "question": "Which EU youth priorities or Youth Goals do the activities actually deliver — not only tick?",
+          "helpText": "Inclusion, green, digital, and participation only where the programme really does that work."
+        },
+        {
+          "id": "relevance.objectives",
+          "label": "Objectives",
+          "type": "textarea",
+          "required": true,
+          "characterLimit": 3000,
+          "minCharacters": 80,
+          "question": "List SMART objectives that follow from the needs. Use the same numbers and titles in every later section.",
+          "helpText": "Each objective should be usable in daily youth work, not a personal-wellbeing slogan."
+        }
+      ]
+    },
+    {
+      "id": "design",
+      "title": "Quality of project design",
+      "fields": [
+        {
+          "id": "participants.number",
+          "label": "Participant count",
+          "type": "text",
+          "required": true,
+          "characterLimit": 80,
+          "factKey": "participant_count",
+          "question": "How many youth workers will take part in the main activity (trainers not counted)?",
+          "helpText": "Up to 50 participants per activity. Use this same number in every section."
+        },
+        {
+          "id": "participants.profile",
+          "label": "Participant profile",
+          "type": "textarea",
+          "required": true,
+          "characterLimit": 2000,
+          "minCharacters": 40,
+          "question": "What is the profile of the youth workers (role, sending organisation, experience)?",
+          "helpText": "They must be people active in youth work in the participating organisations — not an open community call."
+        },
+        {
+          "id": "participants.selection_criteria",
+          "label": "Selection criteria",
+          "type": "textarea",
+          "required": true,
+          "characterLimit": 2000,
+          "minCharacters": 80,
+          "factKey": "selection_criteria",
+          "question": "How will you select participants? Named criteria, weightings, and who applies them.",
+          "helpText": "Published criteria and weightings. Not “we will select carefully”."
+        },
+        {
+          "id": "participants.fewer_opportunities",
+          "label": "Fewer opportunities",
+          "type": "textarea",
+          "required": true,
+          "characterLimit": 2000,
+          "minCharacters": 40,
+          "question": "Will participants with fewer opportunities take part? Which barriers, and what support?",
+          "helpText": "Name barriers and support measures — not a declaration that inclusion is important."
+        },
+        {
+          "id": "activities.venue",
+          "label": "Venue",
+          "type": "textarea",
+          "required": true,
+          "characterLimit": 1500,
+          "minCharacters": 20,
+          "factKey": "venue_country",
+          "question": "Where will the activity take place, and why that venue?",
+          "helpText": "Venue must be in a participating organisation’s country."
+        },
+        {
+          "id": "activities.duration_days",
+          "label": "Duration (days)",
+          "type": "text",
+          "required": true,
+          "characterLimit": 40,
+          "factKey": "activity_duration_days",
+          "question": "How many consecutive activity days (excluding travel)?",
+          "helpText": "Eligible PDA duration: 2 to 60 consecutive days excluding travel."
+        },
+        {
+          "id": "activities.dates",
+          "label": "Dates",
+          "type": "text",
+          "required": true,
+          "characterLimit": 200,
+          "question": "What are the planned dates (month/year is enough if the exact days are not fixed)?"
+        },
+        {
+          "id": "activities.programme",
+          "label": "Activity programme",
+          "type": "textarea",
+          "required": true,
+          "characterLimit": 5000,
+          "minCharacters": 120,
+          "question": "Outline the professional development activity (non-formal methods, sessions, how it serves the objectives).",
+          "helpText": "This is a training course / study visit / job-shadowing for youth workers — not a youth exchange, festival, or academic study trip."
+        },
+        {
+          "id": "activities.methods",
+          "label": "Non-formal methods",
+          "type": "textarea",
+          "required": true,
+          "characterLimit": 2000,
+          "minCharacters": 40,
+          "question": "Which non-formal methods will you use, and how do they match the learning outcomes?"
+        },
+        {
+          "id": "activities.apv",
+          "label": "Preparatory visit",
+          "type": "select",
+          "required": true,
+          "question": "Are you requesting a preparatory visit?",
+          "helpText": "An APV without a session plan will not be funded.",
+          "options": [
+            { "value": "yes", "label": "Yes — we have a day-by-day APV programme" },
+            { "value": "no", "label": "No" }
+          ]
+        },
+        {
+          "id": "annexes.apv_programme",
+          "label": "APV programme",
+          "type": "textarea",
+          "required": false,
+          "characterLimit": 4000,
+          "minCharacters": 80,
+          "conditionalOn": { "field": "activities.apv", "equals": "yes" },
+          "question": "Paste or describe the APV session plan (who, when, what each session is for)."
+        },
+        {
+          "id": "activities.learning_outcomes",
+          "label": "Learning outcomes",
+          "type": "textarea",
+          "required": true,
+          "characterLimit": 3000,
+          "minCharacters": 80,
+          "question": "Knowledge, skills and attitudes. These must be usable in daily youth work.",
+          "helpText": "Not video production, startup consulting, or personal dopamine detox as the core outcome."
+        },
+        {
+          "id": "activities.youthpass",
+          "label": "Recognition",
+          "type": "textarea",
+          "required": true,
+          "characterLimit": 1500,
+          "minCharacters": 40,
+          "question": "How will learning be recognised (Youthpass, reflection sessions, certificates)?"
+        },
+        {
+          "id": "activities.preparation",
+          "label": "Preparation, implementation, follow-up",
+          "type": "textarea",
+          "required": true,
+          "characterLimit": 4000,
+          "minCharacters": 80,
+          "question": "What happens before, during and after — who does what, and how is each phase evaluated?"
+        }
+      ]
+    },
+    {
+      "id": "management",
+      "title": "Quality of project management",
+      "fields": [
+        {
+          "id": "management.impact",
+          "label": "Impact and dissemination",
+          "type": "textarea",
+          "required": true,
+          "characterLimit": 4000,
+          "minCharacters": 80,
+          "question": "Impact at the real scale of the activity, with target groups, channels, timeline and indicators.",
+          "helpText": "Name an expected change, an indicator, a measurement method, and a timeline. “Participants will become more aware” is not enough."
+        },
+        {
+          "id": "management.safety",
+          "label": "Safety and insurance",
+          "type": "textarea",
+          "required": true,
+          "characterLimit": 2000,
+          "minCharacters": 40,
+          "question": "What safety, insurance, and safeguarding measures apply to participants?"
+        },
+        {
+          "id": "management.evaluation",
+          "label": "Evaluation",
+          "type": "textarea",
+          "required": true,
+          "characterLimit": 2000,
+          "minCharacters": 40,
+          "question": "How will you evaluate each phase, and which indicators match the real participant numbers?"
+        },
+        {
+          "id": "management.roles",
+          "label": "Management and communication",
+          "type": "textarea",
+          "required": true,
+          "characterLimit": 2500,
+          "minCharacters": 40,
+          "question": "Roles, communication, and how you will keep one project identity (title, numbers, objectives)."
+        }
+      ]
+    },
+    {
+      "id": "annexes",
+      "title": "Annexes",
+      "fields": [
+        {
+          "id": "annexes.timetable",
+          "label": "Day-by-day timetable",
+          "type": "textarea",
+          "required": true,
+          "characterLimit": 8000,
+          "minCharacters": 80,
+          "question": "Paste or outline the day-by-day session plan for the main activity.",
+          "helpText": "Reviewers will not fund an activity without a session programme. Session count should match the duration in days."
+        }
+      ]
+    }
+  ]
+}

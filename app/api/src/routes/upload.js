@@ -3,6 +3,7 @@ import { Router } from 'express';
 import multer from 'multer';
 import { supabaseAdmin } from '../config/supabase.js';
 import { verifyAuth } from '../middleware/auth.js';
+import { extractTextFromBuffer } from '../lib/extractAttachmentText.js';
 
 const router = Router();
 
@@ -13,6 +14,7 @@ const ALLOWED_MIME_TYPES = new Set([
   'image/webp',
   'application/pdf',
   'text/plain',
+  'text/markdown',
   'text/csv',
   'application/msword',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -72,6 +74,10 @@ router.post('/', verifyAuth, (req, res) => {
       name: req.file.originalname,
       size: req.file.size,
       contentType: req.file.mimetype,
+      extractedText: extractTextFromBuffer(req.file.buffer, {
+        mimeType: req.file.mimetype,
+        filename: req.file.originalname,
+      }).text || undefined,
     });
   });
 });

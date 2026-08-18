@@ -38,12 +38,12 @@ Required:
 Optional:
 
 - `OPENAI_BASE_URL` / `OPENAI_MODEL` (default `gpt-5.6-luna` — cheapest GPT-5.6 tier)
-- `MOONSHOT_BASE_URL` / `MOONSHOT_MODEL` (default `moonshot-v1-8k`)
+- `MOONSHOT_BASE_URL` / `MOONSHOT_MODEL` (default `moonshot-v1-128k`)
 - `PORT` (default `4000`)
 
 3. Run SQL migrations in order in the Supabase SQL Editor:
 
-- `app/api/migrations/001_users.sql` … `009_documents_pdf.sql`
+- `app/api/migrations/001_users.sql` … `011_grant_applications.sql`
 
 The API image is built from the **repo root** (`dockerfile: app/api/Dockerfile`) so it can copy `app/resources/derived/` (pass-rate pack). Do not copy raw PDFs.
 

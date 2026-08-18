@@ -79,6 +79,19 @@ describe('POST /api/upload', () => {
     expect(uploadMock).toHaveBeenCalledTimes(1);
   });
 
+  it('extracts UTF-8 text from txt/md uploads', async () => {
+    const res = await request(app)
+      .post('/api/upload')
+      .set('Authorization', 'Bearer t')
+      .attach('file', Buffer.from('Survey of 18 tutors: waste sorting gap.'), {
+        filename: 'needs.md',
+        contentType: 'text/markdown',
+      });
+
+    expect(res.status).toBe(201);
+    expect(res.body.extractedText).toContain('waste sorting gap');
+  });
+
   it('returns 500 when the Storage upload fails', async () => {
     uploadMock.mockResolvedValue({ data: null, error: { message: 'bucket missing' } });
 

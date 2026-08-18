@@ -4,7 +4,7 @@ import type { InterviewQuestion } from '../types'
 const questions: InterviewQuestion[] = [
   {
     id: 'summary',
-    formSection: 'Project description',
+    formSection: 'Objectives and needs',
     formFieldLabel: 'Mobility summary',
     question: 'What higher-education mobility are you planning?',
     helpText: 'KA131 is between Programme-country institutions. KA171 covers mobility with Partner countries.',
@@ -13,7 +13,7 @@ const questions: InterviewQuestion[] = [
   },
   {
     id: 'strand',
-    formSection: 'Participating organisation',
+    formSection: 'Participants',
     formFieldLabel: 'Strand',
     question: 'Is this intra-Programme mobility (KA131) or mobility with Partner countries (KA171)?',
     type: 'select',
@@ -25,7 +25,7 @@ const questions: InterviewQuestion[] = [
   },
   {
     id: 'role',
-    formSection: 'Participating organisation',
+    formSection: 'Participants',
     formFieldLabel: 'Institution role',
     question: 'Is your institution sending, receiving, or both?',
     type: 'select',
@@ -56,7 +56,7 @@ const questions: InterviewQuestion[] = [
   },
   {
     id: 'student_mobility',
-    formSection: 'Activities',
+    formSection: 'Activities and learning outcomes',
     formFieldLabel: 'Student mobility',
     question: 'Studies, traineeship, or blended? Cycle (BA/MA/PhD), duration, and expected ECTS.',
     type: 'textarea',
@@ -64,7 +64,7 @@ const questions: InterviewQuestion[] = [
   },
   {
     id: 'staff_gate',
-    formSection: 'Activities',
+    formSection: 'Activities and learning outcomes',
     formFieldLabel: 'Staff mobility next',
     question: 'Does this request also include staff mobility?',
     type: 'select',
@@ -80,7 +80,7 @@ const questions: InterviewQuestion[] = [
   },
   {
     id: 'staff_mobility',
-    formSection: 'Activities',
+    formSection: 'Activities and learning outcomes',
     formFieldLabel: 'Staff mobility',
     question: 'Teaching assignment or training? Host, duration, and what they will do.',
     type: 'textarea',
@@ -88,7 +88,7 @@ const questions: InterviewQuestion[] = [
   },
   {
     id: 'partners',
-    formSection: 'Partnership',
+    formSection: 'Participants',
     formFieldLabel: 'Partner institutions',
     question: 'Which HEIs are involved, in which countries, and do you have inter-institutional agreements?',
     type: 'textarea',
@@ -108,6 +108,14 @@ const questions: InterviewQuestion[] = [
     formFieldLabel: 'Selection and recognition',
     question: 'How will you select participants, and how will learning be recognised (learning agreement, ECTS, transcript)?',
     type: 'textarea',
+    next: 'recognition',
+  },
+  {
+    id: 'recognition',
+    formSection: 'Recognition and follow-up',
+    formFieldLabel: 'Recognition',
+    question: 'How will learning be recognised (learning agreement, ECTS, transcript, staff certificate)?',
+    type: 'textarea',
     next: 'fewer_opportunities',
   },
   {
@@ -120,7 +128,7 @@ const questions: InterviewQuestion[] = [
   },
   {
     id: 'objectives',
-    formSection: 'What & How',
+    formSection: 'Objectives and needs',
     formFieldLabel: 'Objectives',
     question: 'What should this mobility achieve for students, staff, and the institution?',
     type: 'textarea',
@@ -128,7 +136,7 @@ const questions: InterviewQuestion[] = [
   },
   {
     id: 'impact',
-    formSection: 'Impact',
+    formSection: 'Recognition and follow-up',
     formFieldLabel: 'Impact',
     question: 'What change do you expect after return, and how will you know?',
     type: 'textarea',
@@ -136,9 +144,17 @@ const questions: InterviewQuestion[] = [
   },
   {
     id: 'added_value',
-    formSection: 'Impact',
+    formSection: 'Recognition and follow-up',
     formFieldLabel: 'European added value',
     question: 'Why does this need Erasmus+ rather than a local placement or training?',
+    type: 'textarea',
+    next: 'management',
+  },
+  {
+    id: 'management',
+    formSection: 'Management and accreditation',
+    formFieldLabel: 'Management',
+    question: 'Who coordinates the mobilities, and how do inter-institutional agreements and quality monitoring work?',
     type: 'textarea',
     next: null,
   },

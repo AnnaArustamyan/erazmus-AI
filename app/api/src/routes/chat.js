@@ -2,13 +2,15 @@ import { Router } from 'express';
 import { supabaseAdmin } from '../config/supabase.js';
 import { verifyAuth } from '../middleware/auth.js';
 import { AGENTS, DEFAULT_AGENT_ID, isValidAgentId, persistAgentId } from '../lib/agents.js';
-import { detectDocumentAction, documentChatNotice } from '../lib/documentIntent.js';
+import { detectDocumentAction, documentChatNotice, HANDOFF_INSTRUCTION } from '../lib/documentIntent.js';
 import {
   assessGeneratedDraft,
   notReadyChatNotice,
   stripMarkdownFence,
 } from '../lib/draftQuality.js';
 import { buildPassRateSystemPrompt } from '../lib/passRate.js';
+import { inferActionCode } from '../lib/applicationSchema.js';
+import { loadAttachmentExcerpt } from '../lib/extractAttachmentText.js';
 import { getPlanConfig } from '../lib/plans.js';
 import { estimateTokensFromText, readUsageTotalTokens } from '../lib/tokenUsage.js';
 import {
@@ -16,15 +18,12 @@ import {
   streamChatForPlan,
 } from '../services/aiProvider.js';
 import {
-  createDocumentRecord,
   getDocumentForUser,
   toGeneratedDocumentPayload,
   updateDocumentRecord,
 } from '../services/documents.js';
 import {
   applyTokenUsage,
-  countDocumentsThisMonth,
-  documentCapError,
   getUserQuota,
   isQuotaExhausted,
 } from '../services/quota.js';
@@ -59,6 +58,7 @@ router.post('/', verifyAuth, async (req, res) => {
     regenerate,
     editMessageId,
     documentId,
+    actionCode: rawActionCode,
   } = req.body ?? {};
 
   const agentId = rawAgentId ? rawAgentId : DEFAULT_AGENT_ID;
@@ -75,6 +75,15 @@ router.post('/', verifyAuth, async (req, res) => {
   if (attachmentPath && !attachmentPath.startsWith(`${req.user.id}/`)) {
     return res.status(403).json({ error: 'Invalid attachment reference' });
   }
+
+  const attachmentExcerpt = attachmentPath
+    ? await loadAttachmentExcerpt(supabaseAdmin, attachmentPath, { filename: attachmentName })
+    : '';
+  const userContent =
+    (message.trim() ||
+      (attachmentName
+        ? `(no message — see attached file: ${attachmentName})`
+        : '')) + (attachmentExcerpt ? `\n\n${attachmentExcerpt}` : '');
   if ((regenerate || editMessageId) && !conversationId) {
     return res.status(400).json({ error: 'conversationId is required to edit or regenerate' });
   }
@@ -132,14 +141,6 @@ router.post('/', verifyAuth, async (req, res) => {
     hasDocument: Boolean(existingDoc),
   });
 
-  if (documentAction === 'create') {
-    const documentsThisMonth = await countDocumentsThisMonth(req.user.id);
-    const capError = documentCapError(profile, documentsThisMonth);
-    if (capError) {
-      return res.status(403).json({ error: capError });
-    }
-  }
-
   if (editMessageId) {
     const { data: existing, error: existingError } = await supabaseAdmin
       .from('messages')
@@ -163,9 +164,7 @@ router.post('/', verifyAuth, async (req, res) => {
       await supabaseAdmin.from('messages').delete().in('id', trailingIds);
     }
 
-    const content =
-      message.trim() ||
-      `(no message — see attached file: ${attachmentName || 'attachment'})`;
+    const content = userContent;
     await supabaseAdmin
       .from('messages')
       .update({
@@ -187,9 +186,7 @@ router.post('/', verifyAuth, async (req, res) => {
       await supabaseAdmin.from('messages').delete().eq('id', last.id);
     }
   } else {
-    const content =
-      message.trim() ||
-      `(no message — see attached file: ${attachmentName || 'attachment'})`;
+    const content = userContent;
     await supabaseAdmin.from('messages').insert({
       conversation_id: conversation.id,
       role: 'user',
@@ -212,9 +209,15 @@ router.post('/', verifyAuth, async (req, res) => {
   const agent = AGENTS[agentId];
   const queryText = [
     ...(history ?? []).map((m) => m.content),
-    message,
+    userContent || message,
   ].join('\n');
-  const draftingDocument = documentAction === 'create' || documentAction === 'revise';
+  const resolvedAction =
+    typeof rawActionCode === 'string' && rawActionCode.trim()
+      ? rawActionCode.trim()
+      : inferActionCode(queryText);
+  const actionConfirmed = typeof rawActionCode === 'string' && Boolean(rawActionCode.trim());
+  const draftingDocument = documentAction === 'revise' && Boolean(existingDoc);
+  const handoff = documentAction === 'handoff';
   const chatMessages = draftingDocument
     ? [
         {
@@ -224,25 +227,30 @@ router.post('/', verifyAuth, async (req, res) => {
             latestUserMessage: message,
             mode: 'document',
             skillName: 'application-draft',
+            actionCode: resolvedAction,
           }),
         },
         ...(history ?? []).map((m) => ({ role: m.role, content: m.content })),
         {
           role: 'user',
-          content:
-            documentAction === 'revise' && existingDoc
-              ? `Here is the current application draft to revise:\n\n${existingDoc.content_md}\n\nRevise the FULL Markdown document according to the latest user instruction. Keep sections that should not change. Output Markdown only — no preamble.`
-              : 'Draft the complete Erasmus+ application from this conversation. Match the action type discussed (KA1 or KA2). Output Markdown only — no preamble. If it is not ready, output the short Not ready to draft note — never blank "—" fields.',
+          content: `Here is the current application draft to revise:\n\n${existingDoc.content_md}\n\nRevise the FULL Markdown document according to the latest user instruction. Keep sections that should not change. Output Markdown only — no preamble.`,
         },
       ]
     : [
         {
           role: 'system',
           content: buildPassRateSystemPrompt({
-            agentSystemPrompt: agent.systemPrompt,
+            agentSystemPrompt:
+              `${handoff ? `${agent.systemPrompt}\n\n${HANDOFF_INSTRUCTION}` : agent.systemPrompt}
+${
+  actionConfirmed
+    ? `Action is user-confirmed: ${resolvedAction}. Do not switch it.`
+    : `Action is not confirmed.${resolvedAction ? ` You may recommend ${resolvedAction} as a suggestion.` : ''} Ask the user to confirm the exact action code before any generation. A vague youth project is not enough to choose KA152 vs KA153 vs KA154.`
+}`,
             queryText,
             latestUserMessage: message,
             mode: 'chat',
+            actionCode: resolvedAction,
           }),
         },
         ...(history ?? []).map((m) => ({ role: m.role, content: m.content })),
@@ -304,20 +312,14 @@ router.post('/', verifyAuth, async (req, res) => {
         writeEvent(res, { documentRejected: true, gaps: quality.gaps });
         writeEvent(res, { delta: fullText });
       } else {
-        const saved =
-          documentAction === 'revise' && existingDoc
-            ? await updateDocumentRecord({ existing: existingDoc, contentMd })
-            : await createDocumentRecord({
-                userId: req.user.id,
-                conversationId: conversation.id,
-                contentMd,
-              });
+        const saved = await updateDocumentRecord({ existing: existingDoc, contentMd });
         documentPayload = await toGeneratedDocumentPayload(saved);
         writeEvent(res, { document: documentPayload });
         fullText = documentChatNotice(documentAction);
         writeEvent(res, { delta: fullText });
       }
     } else {
+      if (handoff) writeEvent(res, { handoff: true });
       const provider = await streamChatForPlan({
         plan: profile.plan,
         messages: chatMessages,

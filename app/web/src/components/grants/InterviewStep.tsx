@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { ArrowLeft } from 'lucide-react'
+import { assessAnswer } from '../../lib/grants/schemas/formSchemaToGraph'
 import type { InterviewQuestion } from '../../lib/grants/types'
 
 interface InterviewStepProps {
@@ -9,6 +10,7 @@ interface InterviewStepProps {
   onBack: () => void
   canGoBack: boolean
   progress: number
+  submitLabel?: string
 }
 
 export function InterviewStep({
@@ -18,14 +20,12 @@ export function InterviewStep({
   onBack,
   canGoBack,
   progress,
+  submitLabel = 'Save',
 }: InterviewStepProps) {
   const [value, setValue] = useState(initialValue)
   useEffect(() => setValue(initialValue), [question.id, initialValue])
 
-  const canContinue = value.trim().length > 0
-
   function handleSubmit() {
-    if (!canContinue) return
     onSubmit(value.trim())
   }
 
@@ -33,7 +33,7 @@ export function InterviewStep({
     <div className="mx-auto flex h-full max-w-2xl flex-col justify-center px-2 py-10">
       <div
         role="progressbar"
-        aria-label="Interview progress"
+        aria-label="Application completeness"
         aria-valuenow={progress}
         aria-valuemin={0}
         aria-valuemax={100}
@@ -49,7 +49,7 @@ export function InterviewStep({
           className="mb-4 inline-flex items-center gap-1 text-xs text-app-text-dim hover:text-app-text"
         >
           <ArrowLeft size={14} />
-          Back
+          Back to list
         </button>
       )}
 
@@ -69,6 +69,7 @@ export function InterviewStep({
           rows={5}
           value={value}
           onChange={(e) => setValue(e.target.value)}
+          maxLength={question.characterLimit}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleSubmit()
           }}
@@ -81,6 +82,7 @@ export function InterviewStep({
           autoFocus
           value={value}
           onChange={(e) => setValue(e.target.value)}
+          maxLength={question.characterLimit}
           onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
           className="w-full border border-app-border bg-app-surface px-3 py-2 text-sm text-app-text focus-visible:outline-2 focus-visible:outline-app-accent"
         />
@@ -104,14 +106,31 @@ export function InterviewStep({
         </select>
       )}
 
+      {(() => {
+        const issues = assessAnswer(question, value)
+        const remaining =
+          question.characterLimit != null ? question.characterLimit - value.length : null
+        return (
+          <div className="mt-2 space-y-1">
+            {remaining != null && (
+              <p className="text-[11px] text-app-text-dim">{remaining} characters left</p>
+            )}
+            {value.trim() && issues.map((issue) => (
+              <p key={issue} className="text-xs text-app-danger">
+                {issue}
+              </p>
+            ))}
+          </div>
+        )
+      })()}
+
       <div className="mt-6 flex justify-end">
         <button
           type="button"
           onClick={handleSubmit}
-          disabled={!canContinue}
-          className="border border-app-accent bg-app-accent px-4 py-2 text-sm font-medium text-app-surface disabled:opacity-40"
+          className="border border-app-accent bg-app-accent px-4 py-2 text-sm font-medium text-app-surface"
         >
-          Continue
+          {submitLabel}
         </button>
       </div>
     </div>
