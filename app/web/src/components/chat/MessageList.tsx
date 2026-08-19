@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Check, Copy, FileText, Pencil, RefreshCw } from 'lucide-react'
 import type { ChatMessage } from '../ErasmusChatWorkspace.types'
+import { BrandMark } from '../BrandMark'
 import { MessageContent } from './MessageContent'
 
 interface MessageBubbleProps {
@@ -40,7 +41,7 @@ export function MessageBubble({
 
         {message.attachment && (
           <div
-            className={`mb-2 inline-flex items-center gap-1.5 border border-app-border bg-app-panel px-2.5 py-1.5 text-xs text-app-text-dim ${
+            className={`mb-2 inline-flex items-center gap-1.5 rounded-lg border border-app-border bg-app-panel px-2.5 py-1.5 text-xs text-app-text-dim ${
               isUser ? 'ml-auto' : ''
             }`}
           >
@@ -64,7 +65,7 @@ export function MessageBubble({
           <div
             className={
               isUser
-                ? 'max-w-[92%] border border-app-border bg-app-bubble-user px-4 py-3 text-[0.95rem] leading-relaxed text-app-bubble-user-text'
+                ? 'max-w-[92%] rounded-2xl border border-app-border bg-app-bubble-user px-4 py-3 text-[0.95rem] leading-relaxed text-app-bubble-user-text'
                 : 'text-app-text'
             }
           >
@@ -161,7 +162,8 @@ export function MessageList({
   return (
     <div aria-live="polite" className="mx-auto flex w-full max-w-2xl flex-col px-1">
       {messages.length === 0 ? (
-        <div className="flex flex-col items-start gap-3 pt-16 pb-8">
+        <div className="flex flex-col items-start gap-4 pt-16 pb-8">
+          <BrandMark size={48} />
           <p className="font-display text-2xl font-semibold tracking-tight text-app-text sm:text-[1.75rem]">
             Draft an Erasmus+ application that can pass review.
           </p>

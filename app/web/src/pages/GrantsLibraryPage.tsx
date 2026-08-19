@@ -45,7 +45,7 @@ export function GrantsLibraryPage() {
         <button
           type="button"
           onClick={startNew}
-          className="mt-5 inline-flex items-center gap-1.5 border border-app-accent bg-app-accent px-3 py-2 text-sm font-medium text-app-surface"
+          className="mt-5 inline-flex items-center gap-1.5 rounded-lg border border-app-accent bg-app-accent px-3 py-2 text-sm font-medium text-app-surface"
         >
           <Plus size={14} />
           Start a new application
@@ -62,7 +62,7 @@ export function GrantsLibraryPage() {
           <button
             type="button"
             onClick={startNew}
-            className="inline-flex items-center gap-1.5 border border-app-accent bg-app-accent px-3 py-2 text-sm font-medium text-app-surface"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-app-accent bg-app-accent px-3 py-2 text-sm font-medium text-app-surface"
           >
             <Plus size={14} />
             Start a new application
@@ -72,7 +72,7 @@ export function GrantsLibraryPage() {
           <select
             value={actionFilter}
             onChange={(e) => setActionFilter(e.target.value)}
-            className="border border-app-border bg-app-surface px-2 py-1.5 text-sm"
+            className="rounded-lg border border-app-border bg-app-surface px-2 py-1.5 text-sm"
           >
             <option value="all">All action types</option>
             {ACTION_TYPES.filter((a) => a.supported).map((action) => (
@@ -84,7 +84,7 @@ export function GrantsLibraryPage() {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as 'all' | GrantStatus)}
-            className="border border-app-border bg-app-surface px-2 py-1.5 text-sm"
+            className="rounded-lg border border-app-border bg-app-surface px-2 py-1.5 text-sm"
           >
             <option value="all">All statuses</option>
             <option value="draft">Draft</option>
@@ -95,7 +95,7 @@ export function GrantsLibraryPage() {
         {filtered.length === 0 ? (
           <p className="text-sm text-app-text-dim">No applications match these filters.</p>
         ) : (
-          <div className="overflow-hidden border border-app-border">
+          <div className="overflow-hidden rounded-xl border border-app-border">
             <table className="w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-app-border text-xs text-app-text-dim">

@@ -64,7 +64,7 @@ export function ChatComposer({
         <p
           id={errorId}
           role="alert"
-          className="mx-auto mb-3 flex max-w-2xl items-start gap-2 border border-app-danger/30 bg-app-surface px-3 py-2 text-xs font-medium text-app-danger"
+          className="mx-auto mb-3 flex max-w-2xl items-start gap-2 rounded-lg border border-app-danger/30 bg-app-surface px-3 py-2 text-xs font-medium text-app-danger"
         >
           <AlertTriangle size={13} className="mt-0.5 shrink-0" aria-hidden="true" />
           {errorMessage}
@@ -74,7 +74,7 @@ export function ChatComposer({
         <p
           id={attachmentErrorId}
           role="alert"
-          className="mx-auto mb-3 flex max-w-2xl items-start gap-2 border border-app-danger/30 bg-app-surface px-3 py-2 text-xs font-medium text-app-danger"
+          className="mx-auto mb-3 flex max-w-2xl items-start gap-2 rounded-lg border border-app-danger/30 bg-app-surface px-3 py-2 text-xs font-medium text-app-danger"
         >
           <AlertTriangle size={13} className="mt-0.5 shrink-0" aria-hidden="true" />
           {attachmentError}
@@ -82,11 +82,11 @@ export function ChatComposer({
       )}
       <form
         onSubmit={onSubmit}
-        className="mx-auto max-w-2xl border border-app-border bg-app-surface px-3.5 py-3"
+        className="mx-auto max-w-2xl rounded-2xl border border-app-border bg-app-surface px-3.5 py-3 shadow-[0_1px_2px_rgba(24,32,43,0.04)]"
       >
         {(pendingAttachment || isUploadingAttachment) && (
           <div className="mb-2.5 flex flex-wrap gap-1.5">
-            <div className="flex items-center gap-1.5 border border-app-border bg-app-panel py-1 pl-2.5 pr-1.5 text-xs text-app-text">
+            <div className="flex items-center gap-1.5 rounded-lg border border-app-border bg-app-panel py-1 pl-2.5 pr-1.5 text-xs text-app-text">
               {isUploadingAttachment ? (
                 <Loader2 size={12} className="shrink-0 animate-spin" aria-hidden="true" />
               ) : (
@@ -160,7 +160,7 @@ export function ChatComposer({
               type="button"
               aria-label="Stop generating"
               onClick={onStop}
-              className="inline-flex h-8 items-center gap-1.5 bg-app-text px-3 text-xs font-semibold text-app-bg focus-visible:outline-2 focus-visible:outline-app-accent focus-visible:outline-offset-2"
+              className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-app-text px-3 text-xs font-semibold text-app-bg focus-visible:outline-2 focus-visible:outline-app-accent focus-visible:outline-offset-2"
             >
               <Square size={11} fill="currentColor" />
               Stop
@@ -175,7 +175,7 @@ export function ChatComposer({
                 isUploadingAttachment ||
                 (!draft.trim() && !pendingAttachment)
               }
-              className="inline-flex h-8 items-center gap-1.5 bg-app-text px-3 text-xs font-semibold text-app-bg disabled:cursor-not-allowed disabled:opacity-35"
+              className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-app-text px-3 text-xs font-semibold text-app-bg disabled:cursor-not-allowed disabled:opacity-35"
             >
               <Send size={13} />
               Send

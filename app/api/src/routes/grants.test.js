@@ -49,6 +49,19 @@ describe('GET /api/grants', () => {
     expect(res.body.grants[0].actionCode).toBe('KA122');
     expect(res.body.grants[0].answers.summary).toContain('tutors');
   });
+
+  it('returns 503 when grant_applications is missing', async () => {
+    queueFromResults(supabaseAdminMock.from, [{
+      data: null,
+      error: {
+        code: 'PGRST205',
+        message: "Could not find the table 'public.grant_applications' in the schema cache",
+      },
+    }]);
+    const res = await request(app).get('/api/grants').set('Authorization', 'Bearer t');
+    expect(res.status).toBe(503);
+    expect(res.body.code).toBe('GRANT_TABLE_MISSING');
+  });
 });
 
 describe('POST /api/grants', () => {

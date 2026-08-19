@@ -29,7 +29,7 @@ export function ActionTypePicker({ onSelect }: { onSelect: (code: string) => voi
                 type="button"
                 disabled={!action.supported}
                 onClick={() => onSelect(action.code)}
-                className="flex flex-col gap-2 border border-app-border bg-app-surface p-4 text-left hover:bg-app-panel-2 focus-visible:outline-2 focus-visible:outline-app-accent focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex flex-col gap-2 rounded-xl border border-app-border bg-app-surface p-4 text-left hover:bg-app-panel-2 focus-visible:outline-2 focus-visible:outline-app-accent focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-xs font-semibold text-app-accent">{action.code}</span>

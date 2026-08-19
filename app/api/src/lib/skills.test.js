@@ -13,6 +13,7 @@ describe('product skills', () => {
 
   it('loads chat-coach, project-plan, and application-draft from disk', () => {
     expect(loadSkill('chat-coach').name).toBe('chat-coach');
+    expect(loadSkillBody('chat-coach')).toContain('you may invent a PLAN');
     expect(loadSkillBody('project-plan')).toContain('Never write "—"');
     expect(loadSkillBody('application-draft')).toContain('Application form sections');
     expect(loadSkillBody('application-draft')).not.toContain('## Who');

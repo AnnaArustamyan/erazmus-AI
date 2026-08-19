@@ -27,10 +27,11 @@ const items: RequirementItem[] = [
     fieldId: 'participants.number',
     label: 'Number of participants',
     section: 'Quality of project design',
-    status: 'confirm',
-    issues: ['Confirm this from Chat: 24'],
+    status: 'proposed',
+    issues: ['AI suggestion · Confirm or change'],
     required: true,
-    source: 'chat',
+    source: 'proposal',
+    proposedValue: '2 learners',
   },
 ]
 
@@ -46,5 +47,21 @@ describe('RequirementsWorkspace', () => {
 
     await user.click(screen.getAllByRole('button', { name: /number of participants/i })[0])
     expect(onOpen).toHaveBeenCalledWith('participants.number')
+  })
+
+  it('lets the user confirm a proposed value without opening the editor', async () => {
+    const user = userEvent.setup()
+    const onConfirmProposal = vi.fn()
+    render(
+      <RequirementsWorkspace
+        actionCode="KA121"
+        callYear={2026}
+        items={items}
+        onOpen={vi.fn()}
+        onConfirmProposal={onConfirmProposal}
+      />,
+    )
+    await user.click(screen.getAllByRole('button', { name: /^confirm$/i })[0])
+    expect(onConfirmProposal).toHaveBeenCalledWith('participants.number', '2 learners')
   })
 })

@@ -14,6 +14,14 @@ export interface InterviewOption {
   label: string
 }
 
+export interface FieldAi {
+  canPropose?: boolean
+  proposalStrategy?: 'conservative' | 'none'
+  requiresEvidence?: boolean
+  feasibilityCheck?: boolean
+  cannotInvent?: boolean
+}
+
 export interface InterviewQuestion {
   id: string
   formSection: string
@@ -28,6 +36,8 @@ export interface InterviewQuestion {
   wordLimit?: number
   minCharacters?: number
   factKey?: string
+  dependsOn?: string[]
+  ai?: FieldAi
 }
 
 export interface QuestionGraph {
@@ -40,6 +50,8 @@ export type GrantStatus = 'draft' | 'in_review' | 'ready'
 export type FactSource = 'questionnaire' | 'chat' | 'document' | 'user'
 export type FactConfidence = 'confirmed' | 'inferred' | 'suggested'
 export type FactStatus = 'locked' | 'pending' | 'stale'
+export type FactKind = 'fact' | 'inference' | 'recommendation' | 'missing' | 'unsupported'
+export type FactFeasibility = 'unknown' | 'feasible' | 'infeasible' | 'needs_check'
 
 export interface ApplicationFact {
   key: string
@@ -48,6 +60,10 @@ export interface ApplicationFact {
   sourceField?: string
   confidence: FactConfidence
   status: FactStatus
+  kind?: FactKind
+  feasibility?: FactFeasibility
+  rationale?: string
+  requiresEvidence?: boolean
 }
 
 export interface GrantApplication {

@@ -8,7 +8,7 @@ import {
 } from './schemas/formSchemaToGraph'
 import type { ApplicationFact, QuestionGraph } from './types'
 
-export type RequirementStatus = 'missing' | 'weak' | 'confirm' | 'complete'
+export type RequirementStatus = 'missing' | 'weak' | 'confirm' | 'proposed' | 'complete'
 
 export interface RequirementItem {
   fieldId: string
@@ -17,7 +17,9 @@ export interface RequirementItem {
   status: RequirementStatus
   issues: string[]
   required: boolean
-  source: 'schema' | 'chat'
+  source: 'schema' | 'chat' | 'proposal'
+  proposedValue?: string
+  rationale?: string
 }
 
 export function requirementPath(fieldId?: string): string {
@@ -48,6 +50,8 @@ export function fieldsForGraph(graph: QuestionGraph): FormField[] {
     question: question.question,
     helpText: question.helpText,
     factKey: question.factKey,
+    dependsOn: question.dependsOn,
+    ai: question.ai,
     options: question.options,
     formSection: question.formSection,
     conditionalOn: controllingCondition(graph, question.id),
@@ -69,7 +73,7 @@ function pendingFactForField(facts: ApplicationFact[], fieldId: string): Applica
     (fact) =>
       fact.sourceField === fieldId &&
       fact.source === 'chat' &&
-      (fact.status === 'pending' || fact.confidence === 'inferred'),
+      (fact.status === 'pending' || fact.confidence === 'inferred' || fact.confidence === 'suggested'),
   )
 }
 
@@ -82,11 +86,26 @@ export function buildRequirementItems(input: {
   return input.fields.filter((field) => isFieldApplicable(field, input.answers)).map((field) => {
     const value = input.answers[field.id] ?? ''
     const issues = assessAnswer(field, value)
+    if (
+      value.trim() &&
+      field.ai?.requiresEvidence &&
+      !/\b(survey|focus group|assessment|observation|interview|data|evidence)\b/i.test(value)
+    ) {
+      issues.push('This is a planning idea until the school names evidence (survey, assessments, or observations).')
+    }
     const pending = pendingFactForField(facts, field.id)
     const required = field.required !== false || Boolean(field.conditionalOn)
     let status: RequirementStatus = 'complete'
     let source: RequirementItem['source'] = 'schema'
-    if (pending) {
+    let proposedValue: string | undefined
+    let rationale: string | undefined
+    if (pending?.confidence === 'suggested') {
+      status = 'proposed'
+      source = 'proposal'
+      proposedValue = String(pending.value).trim()
+      rationale = pending.rationale
+      issues.push(pending.rationale || `AI suggestion · Confirm or change: ${proposedValue}`)
+    } else if (pending) {
       status = 'confirm'
       source = 'chat'
       const preview = String(pending.value).trim()
@@ -108,6 +127,8 @@ export function buildRequirementItems(input: {
       issues,
       required,
       source,
+      proposedValue,
+      rationale,
     }
   })
 }
@@ -131,6 +152,36 @@ export function groupRequirementsBySection(items: RequirementItem[]): { section:
     buckets.get(section)!.push(item)
   }
   return order.map((section) => ({ section, items: buckets.get(section) ?? [] }))
+}
+
+export function applyWorkingScenario(
+  items: RequirementItem[],
+  scenario: { items: { fieldId: string; fillState: string; answerValue: string; rationale: string; confirmLabel: string }[] },
+  answers: Record<string, string>,
+): RequirementItem[] {
+  const byField = new Map(scenario.items.map((row) => [row.fieldId, row]))
+  return items.map((item) => {
+    if (answers[item.fieldId]?.trim()) return item
+    const candidate = byField.get(item.fieldId)
+    if (!candidate) return item
+    if (candidate.fillState === 'proposed' && candidate.answerValue.trim()) {
+      return {
+        ...item,
+        status: 'proposed',
+        source: 'proposal',
+        proposedValue: candidate.answerValue,
+        rationale: candidate.rationale,
+        issues: [candidate.confirmLabel, candidate.rationale].filter(Boolean),
+      }
+    }
+    if (candidate.fillState === 'must_confirm') {
+      return {
+        ...item,
+        issues: [candidate.confirmLabel, candidate.rationale].filter(Boolean),
+      }
+    }
+    return item
+  })
 }
 
 export function needsAttention(items: RequirementItem[]): RequirementItem[] {

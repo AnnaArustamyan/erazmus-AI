@@ -232,6 +232,8 @@ create table if not exists public.grant_applications (
 create index if not exists grant_applications_user_id_updated_at_idx
   on public.grant_applications (user_id, updated_at desc);
 
+alter table public.grant_applications disable row level security;
+
 
 -- ========== 012_application_state.sql ==========
 

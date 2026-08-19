@@ -12,8 +12,6 @@ import { useAuth } from '../auth/AuthContext'
 import { createGrant, listGrants, updateGrant } from '../api/grantsClient'
 import { QUESTION_GRAPHS } from '../lib/grants/banks'
 import { factsFromAnswers } from '../lib/grants/facts'
-import { flattenFormFields } from '../lib/grants/schemas/formSchemaToGraph'
-import { ka153FormSchema } from '../lib/grants/schemas/ka153'
 import { buildRequirementItems, completenessPercent, fieldsForAction } from '../lib/grants/gaps'
 import { createId, loadGrants, saveGrants } from '../lib/grants/storage'
 import {
@@ -41,6 +39,7 @@ interface GrantInterviewValue {
   setSeedText: (text: string | null) => void
   selectAction: (code: string, seedTitle?: string) => void
   answerField: (fieldId: string, value: string) => void
+  answerFields: (updates: Record<string, string>) => void
   answerCurrent: (value: string) => void
   goBack: () => void
   editAnswer: (questionId: string) => void
@@ -61,8 +60,7 @@ interface GrantInterviewValue {
 const GrantInterviewContext = createContext<GrantInterviewValue | null>(null)
 
 function factsFor(code: string, answers: Record<string, string>, existing: ApplicationFact[] = []): ApplicationFact[] {
-  if (code !== 'KA153') return existing
-  return factsFromAnswers(flattenFormFields(ka153FormSchema), answers, existing)
+  return factsFromAnswers(fieldsForAction(code), answers, existing)
 }
 
 function isServerId(id: string): boolean {
@@ -306,11 +304,11 @@ export function GrantInterviewProvider({ children }: { children: ReactNode }) {
     [accessToken, applyGrant, grantId, grants, patchGrant, persist, replaceGrantId, seedText],
   )
 
-  const answerField = useCallback(
-    (fieldId: string, value: string) => {
+  const applyAnswers = useCallback(
+    (updates: Record<string, string>) => {
       if (!actionCode || !grantId) return
       const graph = QUESTION_GRAPHS[actionCode]
-      const nextAnswers = { ...answers, [fieldId]: value }
+      const nextAnswers = { ...answers, ...updates }
       const nextPath = Object.keys(nextAnswers).filter((id) => nextAnswers[id]?.trim())
       const existing = loadGrants().find((row) => row.id === grantId)
       const facts = factsFor(actionCode, nextAnswers, existing?.facts ?? [])
@@ -324,20 +322,36 @@ export function GrantInterviewProvider({ children }: { children: ReactNode }) {
       setAnswers(nextAnswers)
       setPath(nextPath)
       setStep('workspace')
-      const titleSource = graph?.startId === fieldId || fieldId === 'project.summary'
+      const titleSource = Object.keys(updates).some(
+        (fieldId) => graph?.startId === fieldId || fieldId === 'project.summary',
+      )
+      const titleValue = titleSource
+        ? Object.entries(updates).find(([fieldId]) => graph?.startId === fieldId || fieldId === 'project.summary')?.[1]
+        : undefined
       patchGrant(grantId, {
         answers: nextAnswers,
         path: nextPath,
         facts,
         percentComplete: percent,
-        title:
-          titleSource && value.trim()
-            ? value.trim().slice(0, 60)
-            : existing?.title,
+        title: titleValue?.trim() ? titleValue.trim().slice(0, 60) : existing?.title,
         status: requiredOpen ? 'draft' : 'in_review',
       })
     },
     [actionCode, answers, grantId, patchGrant],
+  )
+
+  const answerField = useCallback(
+    (fieldId: string, value: string) => {
+      applyAnswers({ [fieldId]: value })
+    },
+    [applyAnswers],
+  )
+
+  const answerFields = useCallback(
+    (updates: Record<string, string>) => {
+      applyAnswers(updates)
+    },
+    [applyAnswers],
   )
 
   const answerCurrent = useCallback(
@@ -435,6 +449,7 @@ export function GrantInterviewProvider({ children }: { children: ReactNode }) {
       setSeedText,
       selectAction,
       answerField,
+      answerFields,
       answerCurrent,
       goBack,
       editAnswer,
@@ -451,6 +466,7 @@ export function GrantInterviewProvider({ children }: { children: ReactNode }) {
       actionCode,
       activeGrant,
       answerField,
+      answerFields,
       answerCurrent,
       answers,
       completeWithDocument,

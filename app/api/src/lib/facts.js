@@ -40,6 +40,10 @@ export function makeFact(fact) {
     sourceField: fact.sourceField || undefined,
     confidence,
     status,
+    kind: fact.kind || undefined,
+    feasibility: fact.feasibility || undefined,
+    rationale: fact.rationale || undefined,
+    requiresEvidence: fact.requiresEvidence || undefined,
   };
 }
 

@@ -1,4 +1,11 @@
-import type { ApplicationFact, FactConfidence, FactSource, FactStatus } from './types'
+import type {
+  ApplicationFact,
+  FactConfidence,
+  FactFeasibility,
+  FactKind,
+  FactSource,
+  FactStatus,
+} from './types'
 import { flattenFormFields, type FormField } from './schemas/formSchemaToGraph'
 
 export function makeFact(input: {
@@ -8,6 +15,10 @@ export function makeFact(input: {
   sourceField?: string
   confidence?: FactConfidence
   status?: FactStatus
+  kind?: FactKind
+  feasibility?: FactFeasibility
+  rationale?: string
+  requiresEvidence?: boolean
 }): ApplicationFact {
   const confidence = input.confidence ?? 'inferred'
   const status = input.status ?? (confidence === 'confirmed' ? 'locked' : 'pending')
@@ -18,6 +29,10 @@ export function makeFact(input: {
     sourceField: input.sourceField,
     confidence,
     status,
+    kind: input.kind,
+    feasibility: input.feasibility,
+    rationale: input.rationale,
+    requiresEvidence: input.requiresEvidence,
   }
 }
 

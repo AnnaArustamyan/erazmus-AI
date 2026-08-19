@@ -43,7 +43,7 @@ Optional:
 
 3. Run SQL migrations in order in the Supabase SQL Editor:
 
-- `app/api/migrations/001_users.sql` … `011_grant_applications.sql`
+- `app/api/migrations/001_users.sql` … `012_application_state.sql`
 
 The API image is built from the **repo root** (`dockerfile: app/api/Dockerfile`) so it can copy `app/resources/derived/` (pass-rate pack). Do not copy raw PDFs.
 

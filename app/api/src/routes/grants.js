@@ -8,7 +8,26 @@ import { validateApplication } from '../lib/validateApplication.js';
 
 const router = Router();
 
+const GRANT_TABLE_MISSING =
+  'Grant applications table is missing. Run 011_grant_applications.sql and 012_application_state.sql in the Supabase SQL editor.';
+
+function isMissingGrantTable(error) {
+  return (
+    error?.code === 'PGRST205' ||
+    /grant_applications/i.test(error?.message || '')
+  );
+}
+
+function grantWriteFailed(res, error, fallback) {
+  console.error('[grants]', fallback, error);
+  if (isMissingGrantTable(error)) {
+    return res.status(503).json({ error: GRANT_TABLE_MISSING, code: 'GRANT_TABLE_MISSING' });
+  }
+  return res.status(500).json({ error: fallback });
+}
+
 const STATUSES = new Set(['draft', 'in_review', 'ready', 'complete']);
+
 const GRANT_SELECT =
   'id, user_id, action_code, call_year, title, answers, path, facts, sections, validation_report, readiness, action_confirmed, conversation_id, status, percent_complete, document_id, content_md, created_at, updated_at';
 
@@ -58,8 +77,7 @@ router.get('/', verifyAuth, async (req, res) => {
     .order('updated_at', { ascending: false });
 
   if (error) {
-    console.error('[grants] list failed', error);
-    return res.status(500).json({ error: 'Could not list grant applications' });
+    return grantWriteFailed(res, error, 'Could not list grant applications');
   }
   return res.json({ grants: (data ?? []).map(toGrantPayload) });
 });
@@ -109,8 +127,7 @@ router.post('/', verifyAuth, async (req, res) => {
     .single();
 
   if (error) {
-    console.error('[grants] create failed', error);
-    return res.status(500).json({ error: 'Could not create grant application' });
+    return grantWriteFailed(res, error, 'Could not create grant application');
   }
   return res.status(201).json({ grant: toGrantPayload(data) });
 });

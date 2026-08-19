@@ -76,7 +76,7 @@ export function ProfileMenu({
         aria-controls={menuId}
         aria-label="Profile menu"
         onClick={() => setIsOpen((open) => !open)}
-        className="flex h-8 w-8 shrink-0 items-center justify-center border border-app-border bg-app-accent-soft text-[10px] font-semibold tracking-wide text-app-accent hover:opacity-90 focus-visible:outline-2 focus-visible:outline-app-accent focus-visible:outline-offset-2"
+        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-app-border bg-app-accent-soft text-[10px] font-semibold tracking-wide text-app-accent hover:opacity-90 focus-visible:outline-2 focus-visible:outline-app-accent focus-visible:outline-offset-2"
       >
         {initials}
       </button>
@@ -86,10 +86,10 @@ export function ProfileMenu({
           id={menuId}
           role="menu"
           aria-label="Account"
-          className="absolute right-0 top-10 z-50 w-64 border border-app-border bg-app-surface p-2 shadow-sm"
+          className="absolute right-0 top-10 z-50 w-64 rounded-xl border border-app-border bg-app-surface p-2 shadow-lg"
         >
           <div className="mb-2 flex items-center gap-2.5 border-b border-app-border px-2 pb-3">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center border border-app-border bg-app-accent-soft text-xs font-semibold text-app-accent">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-app-border bg-app-accent-soft text-xs font-semibold text-app-accent">
               {initials}
             </div>
             <div className="min-w-0">
@@ -98,7 +98,7 @@ export function ProfileMenu({
             </div>
           </div>
 
-          <div className="mb-2 border border-app-border bg-app-panel p-2.5">
+          <div className="mb-2 rounded-lg border border-app-border bg-app-panel p-2.5">
             <div className="mb-1 flex items-center justify-between">
               <span className="text-xs font-semibold text-app-text">{capitalize(plan)} plan</span>
               <span className="text-[10px] font-medium uppercase tracking-[0.06em] text-app-text-dim">
@@ -114,7 +114,7 @@ export function ProfileMenu({
               aria-valuenow={tokensUsed}
               aria-valuemin={0}
               aria-valuemax={tokenLimit}
-              className="h-1 w-full overflow-hidden bg-app-border"
+              className="h-1 w-full overflow-hidden rounded-full bg-app-border"
             >
               <div
                 className="h-full bg-app-accent"

@@ -314,7 +314,7 @@ export function buildPassRateSystemPrompt({
 
   const structureBlock =
     mode === 'chat' && resolvedSkill !== 'application-draft' && resolvedSkill !== 'project-plan'
-      ? `\nIn chat: never dump a blank application skeleton. Ask questions or draft the one section they asked for.\n`
+      ? `\nIn chat: never dump a blank application skeleton. If the user has no plan, propose a conservative working scenario, label it as a hypothesis, check feasibility, and ask them to accept or change it. Do not bounce a questionnaire. Draft a section only if they asked for one.\n`
       : '';
 
   const extra = [];

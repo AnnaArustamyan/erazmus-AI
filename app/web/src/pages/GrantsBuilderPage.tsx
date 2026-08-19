@@ -6,12 +6,14 @@ import { RequirementEditor } from '../components/grants/RequirementEditor'
 import { RequirementsWorkspace } from '../components/grants/RequirementsWorkspace'
 import { confirmedActionCode } from '../lib/grants/activeGrant'
 import {
+  applyWorkingScenario,
   buildRequirementItems,
   completenessPercent,
   fieldById,
   fieldsForAction,
   requirementPath,
 } from '../lib/grants/gaps'
+import { confirmableItems, contextFromAnswers, proposeWorkingScenario } from '../lib/grants/proposals'
 
 export function GrantsBuilderPage() {
   const [params, setParams] = useSearchParams()
@@ -21,6 +23,7 @@ export function GrantsBuilderPage() {
     grants,
     selectAction,
     answerField,
+    answerFields,
     ensureActiveGrant,
   } = useGrantInterview()
 
@@ -34,12 +37,20 @@ export function GrantsBuilderPage() {
 
   const items = useMemo(() => {
     if (!actionCode) return []
-    return buildRequirementItems({
+    const base = buildRequirementItems({
       fields: fieldsForAction(actionCode),
       answers,
       facts: grant?.facts,
     })
+    if (actionCode !== 'KA121') return base
+    const scenario = proposeWorkingScenario(contextFromAnswers(actionCode, answers))
+    return applyWorkingScenario(base, scenario, answers)
   }, [actionCode, answers, grant?.facts])
+
+  const scenario = useMemo(() => {
+    if (actionCode !== 'KA121') return null
+    return proposeWorkingScenario(contextFromAnswers(actionCode, answers))
+  }, [actionCode, answers])
 
   if (!grant || !actionCode) {
     return (
@@ -55,12 +66,16 @@ export function GrantsBuilderPage() {
   const field = editingId ? fieldById(actionCode, editingId) : undefined
   if (editingId && !field) return <Navigate to={requirementPath()} replace />
 
+  const proposedForField = field
+    ? items.find((item) => item.fieldId === field.id && item.status === 'proposed')?.proposedValue
+    : undefined
+
   if (field) {
     return (
       <div className="h-full overflow-y-auto px-4 sm:px-8">
         <RequirementEditor
           field={field}
-          value={answers[field.id] ?? ''}
+          value={answers[field.id] || proposedForField || ''}
           completeness={completenessPercent(items)}
           onSave={(value) => {
             answerField(field.id, value)
@@ -78,7 +93,17 @@ export function GrantsBuilderPage() {
         actionCode={actionCode}
         callYear={grant.callYear}
         items={items}
+        scenario={scenario}
         onOpen={(fieldId) => setParams({ field: fieldId })}
+        onConfirmProposal={(fieldId, value) => answerField(fieldId, value)}
+        onUseWorkingScenario={() => {
+          if (!scenario) return
+          const updates: Record<string, string> = {}
+          for (const row of confirmableItems(scenario)) {
+            if (!answers[row.fieldId]?.trim()) updates[row.fieldId] = row.answerValue
+          }
+          if (Object.keys(updates).length) answerFields(updates)
+        }}
       />
     </div>
   )

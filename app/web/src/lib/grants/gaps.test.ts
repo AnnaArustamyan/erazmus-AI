@@ -47,6 +47,30 @@ describe('requirement gaps', () => {
     expect(summary?.issues.some((issue) => /at least/i.test(issue))).toBe(true)
   })
 
+  it('marks suggested Chat facts as proposed, not complete', () => {
+    const fields = flattenFormFields(ka153FormSchema)
+    const items = buildRequirementItems({
+      fields,
+      answers: {},
+      facts: [
+        {
+          key: 'participant_count',
+          value: 2,
+          source: 'chat',
+          sourceField: 'participants.number',
+          confidence: 'suggested',
+          status: 'pending',
+          kind: 'recommendation',
+          rationale: 'Conservative first-time scale.',
+        },
+      ],
+    })
+    const row = items.find((item) => item.fieldId === 'participants.number')
+    expect(row?.status).toBe('proposed')
+    expect(row?.source).toBe('proposal')
+    expect(row?.proposedValue).toBe('2')
+  })
+
   it('uses Chat pending facts as confirm-the-same-row gaps, not a parallel list', () => {
     const fields = flattenFormFields(ka153FormSchema)
     const items = buildRequirementItems({

@@ -10,7 +10,7 @@ npm install
 npm run dev            # http://localhost:4000
 ```
 
-Apply SQL in `migrations/` (001→006) via Supabase SQL Editor.
+Apply SQL in `migrations/` (001→012) via Supabase SQL Editor. If `/api/grants` returns that `grant_applications` is missing, run `011_grant_applications.sql` then `012_application_state.sql`.
 
 ## Tests
 

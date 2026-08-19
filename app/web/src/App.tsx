@@ -47,6 +47,7 @@ import { GrantInterviewProvider, useGrantInterview } from './grants/GrantIntervi
 import { grantForConversation } from './lib/grants/activeGrant'
 import { ApplicationSwitcher } from './components/layout/ApplicationSwitcher'
 import { IconRail } from './components/layout/IconRail'
+import { BrandLockup, BrandMark } from './components/BrandMark'
 import { MobileTabBar } from './components/layout/MobileTabBar'
 
 function toSummary(c: ApiConversationSummary): ConversationSummary {
@@ -64,13 +65,21 @@ function AppHeader({
   const navigate = useNavigate()
 
   return (
-    <div className="flex shrink-0 items-center justify-between gap-3 border-b border-app-border bg-app-panel/95 px-5 py-2.5 backdrop-blur-[2px]">
+    <div className="flex shrink-0 items-center justify-between gap-3 border-b border-app-border/80 bg-app-panel/90 px-3 py-2 backdrop-blur-[2px] sm:px-4">
       <button
         type="button"
-        onClick={() => navigate('/')}
-        className="hidden min-w-0 truncate text-left text-xs text-app-text-dim hover:text-app-text sm:block"
+        onClick={() => navigate('/chat')}
+        className="min-w-0 text-left hover:opacity-90 focus-visible:outline-2 focus-visible:outline-app-accent focus-visible:outline-offset-2"
       >
-        Erasmus+ KA1 & KA2
+        <span className="sm:hidden">
+          <BrandMark size={26} alt="Erasmus AI" />
+        </span>
+        <span className="hidden sm:block">
+          <BrandLockup
+            size={26}
+            titleClassName="font-display text-[1.05rem] font-semibold tracking-tight text-app-text"
+          />
+        </span>
       </button>
       <ApplicationSwitcher />
       <ProfileMenu
@@ -111,6 +120,8 @@ function ChatWorkspace({
   tokenRef.current = accessToken
   const actionRef = useRef(grantActionCode)
   actionRef.current = grantActionCode
+  const answersRef = useRef(activeGrant?.answers ?? {})
+  answersRef.current = activeGrant?.answers ?? {}
   const grantStateRef = useRef({ grants, activeGrant, setActiveGrant, linkConversation })
   grantStateRef.current = { grants, activeGrant, setActiveGrant, linkConversation }
   const location = useLocation()
@@ -282,6 +293,7 @@ function ChatWorkspace({
         getAccessToken: () => tokenRef.current,
         initialConversationId: activeConversationId,
         getActionCode: () => actionRef.current,
+        getGrantAnswers: () => answersRef.current,
         onConversationChange: (id) => {
           setActiveConversationId(id)
           saveActiveConversationId(id)

@@ -12,6 +12,21 @@ import {
 } from './facts.js';
 
 describe('facts provenance', () => {
+  it('treats suggested facts as pending and unusable for generation', () => {
+    const fact = makeFact({
+      key: 'participant_count',
+      value: 2,
+      source: 'chat',
+      confidence: 'suggested',
+      kind: 'recommendation',
+      feasibility: 'unknown',
+      rationale: 'Conservative first-time scale.',
+    });
+    expect(fact.status).toBe('pending');
+    expect(fact.kind).toBe('recommendation');
+    expect(isUsableFact(fact)).toBe(false);
+  });
+
   it('treats inferred chat facts as pending and unusable for generation', () => {
     const fact = makeFact({
       key: 'participant_count',

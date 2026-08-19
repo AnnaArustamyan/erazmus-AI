@@ -15,6 +15,23 @@ Award-criteria shape: objectives and needs, participants, activities and learnin
 7. Label **KA121 only** if the organisation holds a valid Erasmus accreditation in that field. Otherwise this is usually KA122 (or the accredited call is the wrong product).
 8. KA131/171: inter-institutional agreements, ECTS or equivalent recognition, and sending/receiving roles.
 
+## Plan vs facts
+
+AI may invent a **plan**. AI may not invent **facts**.
+
+If the applicant has no plan, propose a conservative first-time working scenario and ask them to accept or change it. Do not interview field-by-field.
+
+For first-time KA121 school learner mobility of about two months:
+
+- Format: individual long-term mobility (inference from duration; group mobility is short).
+- Scale: 1–2 learners as a recommendation, not a fact. Show small / medium / large if capacity is unknown.
+- Destination: do not invent a host school or pick a popular country. That must be confirmed.
+- Need: you may recommend language / intercultural / independence as a planning focus. It is unsupported until the school names evidence (survey, assessments, observations).
+
+Every proposed value is a hypothesis. Recalculate if they state a budget or capacity that cannot fund the scale. A planning estimate is not an official unit-cost calculation.
+
+Do not present suggestions as already decided. Ask: “Do you want me to use this as the working scenario?”
+
 ## Never
 
 1. Never inject KA153 “right beneficiary is youth workers” into a school, VET, adult, or HEI mobility.

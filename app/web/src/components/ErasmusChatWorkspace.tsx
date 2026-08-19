@@ -451,12 +451,12 @@ export function ErasmusChatWorkspace({
       data-testid="erasmus-chat-workspace"
       className="workspace-shell flex h-full min-h-[560px] w-full overflow-hidden text-app-text"
     >
-      <aside className="flex w-[17.5rem] shrink-0 flex-col border-r border-app-border bg-app-panel/90 px-4 py-5 backdrop-blur-[2px]">
-        <div className="mb-6 px-0.5">
-          <div className="font-display text-[1.35rem] font-semibold tracking-tight text-app-text">
-            Erasmus AI
-          </div>
-          <p className="mt-1 text-xs leading-relaxed text-app-text-dim">
+      <aside className="flex w-[17.5rem] shrink-0 flex-col border-r border-app-border/80 bg-app-panel/90 px-3.5 py-5 backdrop-blur-[2px]">
+        <div className="mb-5 px-1">
+          <p className="font-display text-[1.05rem] font-semibold tracking-tight text-app-text">
+            Conversations
+          </p>
+          <p className="mt-0.5 text-xs leading-relaxed text-app-text-dim">
             KA1 and KA2 drafts under Programme Guide pass rules
           </p>
         </div>
@@ -465,7 +465,7 @@ export function ErasmusChatWorkspace({
           id="erasmus-token-balance"
           role="group"
           aria-label="Token balance"
-          className="mb-5 border border-app-border bg-app-surface px-3 py-3"
+          className="mb-5 rounded-xl border border-app-border bg-app-surface px-3 py-3"
         >
           <div className="mb-2 flex items-center justify-between text-xs">
             <span className="font-medium text-app-text">Monthly tokens</span>
@@ -480,7 +480,7 @@ export function ErasmusChatWorkspace({
             aria-valuenow={effectiveTokenBalance.used}
             aria-valuemin={0}
             aria-valuemax={effectiveTokenBalance.limit}
-            className="h-1 w-full overflow-hidden bg-app-border"
+            className="h-1 w-full overflow-hidden rounded-full bg-app-border"
           >
             <div
               className="h-full bg-app-accent transition-[width]"
@@ -527,7 +527,7 @@ export function ErasmusChatWorkspace({
               <button
                 type="button"
                 onClick={onStartQuestionnaire}
-                className="shrink-0 border border-app-border px-2.5 py-1 text-xs text-app-text-dim hover:text-app-text"
+                className="shrink-0 rounded-lg border border-app-border px-2.5 py-1 text-xs text-app-text-dim hover:text-app-text"
               >
                 Requirements
               </button>
@@ -537,7 +537,7 @@ export function ErasmusChatWorkspace({
                 type="button"
                 onClick={onGenerateFromThread}
                 disabled={isGeneratingFromThread || isSending || messages.length === 0}
-                className="shrink-0 border border-app-accent bg-app-accent px-2.5 py-1 text-xs font-medium text-app-surface disabled:opacity-40"
+                className="shrink-0 rounded-lg border border-app-accent bg-app-accent px-2.5 py-1 text-xs font-medium text-app-surface disabled:opacity-40"
               >
                 {isGeneratingFromThread ? 'Generating…' : 'Generate from this thread'}
               </button>
@@ -547,7 +547,7 @@ export function ErasmusChatWorkspace({
           <div
             role="group"
             aria-label="Theme"
-            className="flex items-center border border-app-border bg-app-surface p-0.5"
+            className="flex items-center overflow-hidden rounded-lg border border-app-border bg-app-surface p-0.5"
           >
             <button
               type="button"

@@ -1,5 +1,7 @@
-import type { InterviewQuestion, QuestionGraph } from '../types'
+import type { FieldAi, InterviewQuestion, QuestionGraph } from '../types'
 import { defineGraph } from '../grantGraph'
+
+export type { FieldAi }
 
 export interface FormFieldOption {
   value: string
@@ -17,6 +19,8 @@ export interface FormField {
   question?: string
   helpText?: string
   factKey?: string
+  dependsOn?: string[]
+  ai?: FieldAi
   options?: FormFieldOption[]
   formSection?: string
   conditionalOn?: { field: string; equals: string }
@@ -60,6 +64,8 @@ export function formSchemaToGraph(schema: FormSchema): QuestionGraph {
       wordLimit: field.wordLimit,
       minCharacters: field.minCharacters,
       factKey: field.factKey,
+      dependsOn: field.dependsOn,
+      ai: field.ai,
     }
   })
   return defineGraph(fields[0].id, questions)
@@ -118,5 +124,7 @@ export function toInterviewQuestion(field: FormField): InterviewQuestion {
     wordLimit: field.wordLimit,
     minCharacters: field.minCharacters,
     factKey: field.factKey,
+    dependsOn: field.dependsOn,
+    ai: field.ai,
   }
 }

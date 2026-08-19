@@ -1,6 +1,7 @@
 import { useCallback, useId, useState, type FormEvent } from 'react'
 import { AlertTriangle, Moon, Sun } from 'lucide-react'
 import { useAuth } from '../auth/AuthContext'
+import { BrandLockup } from './BrandMark'
 import type { ThemeMode } from './ErasmusChatWorkspace.types'
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -76,7 +77,7 @@ export function LoginScreen({ theme, onThemeChange }: LoginScreenProps) {
         <div
           role="group"
           aria-label="Theme"
-          className="flex items-center border border-app-border bg-app-surface p-0.5"
+          className="flex items-center overflow-hidden rounded-lg border border-app-border bg-app-surface p-0.5"
         >
           <button
             type="button"
@@ -94,7 +95,7 @@ export function LoginScreen({ theme, onThemeChange }: LoginScreenProps) {
             aria-label="Dark theme"
             aria-pressed={theme === 'dark'}
             onClick={() => onThemeChange('dark')}
-            className={`flex h-7 w-8 items-center justify-center focus-visible:outline-2 focus-visible:outline-app-accent focus-visible:outline-offset-2 ${
+            className={`flex h-7 w-8 items-center justify-center rounded-md focus-visible:outline-2 focus-visible:outline-app-accent focus-visible:outline-offset-2 ${
               theme === 'dark' ? 'bg-app-panel-2 text-app-text' : 'text-app-text-dim'
             }`}
           >
@@ -103,12 +104,13 @@ export function LoginScreen({ theme, onThemeChange }: LoginScreenProps) {
         </div>
       </div>
 
-      <div className="w-full max-w-sm border border-app-border bg-app-surface p-7">
+      <div className="w-full max-w-sm rounded-2xl border border-app-border bg-app-surface p-8 shadow-[0_8px_30px_rgba(24,32,43,0.06)]">
         <div className="mb-7">
-          <div className="font-display text-[1.65rem] font-semibold tracking-tight text-app-text">
-            Erasmus AI
-          </div>
-          <p className="mt-1.5 text-sm leading-relaxed text-app-text-dim">
+          <BrandLockup
+            size={40}
+            titleClassName="font-display text-[1.65rem] font-semibold tracking-tight text-app-text"
+          />
+          <p className="mt-3 text-sm leading-relaxed text-app-text-dim">
             Sign in to draft Erasmus+ applications under Programme Guide pass rules.
           </p>
         </div>

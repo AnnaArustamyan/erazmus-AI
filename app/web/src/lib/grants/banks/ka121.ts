@@ -22,6 +22,8 @@ const questions: InterviewQuestion[] = [
       { value: 'no', label: 'No — we may need KA122 instead' },
     ],
     next: 'field',
+    factKey: 'accredited',
+    ai: { canPropose: false, cannotInvent: true },
     branches: [
       { equals: 'yes', goto: 'field' },
       { equals: 'no', goto: 'field' },
@@ -33,6 +35,8 @@ const questions: InterviewQuestion[] = [
     formFieldLabel: 'Education field',
     question: 'Which accredited field is this call for?',
     type: 'select',
+    factKey: 'education_field',
+    ai: { canPropose: false },
     options: [
       { value: 'school', label: 'School education' },
       { value: 'vet', label: 'Vocational education and training' },
@@ -46,6 +50,9 @@ const questions: InterviewQuestion[] = [
     formFieldLabel: 'Activity types',
     question: 'Which mobility activities are you requesting this year?',
     type: 'select',
+    factKey: 'mobility_role',
+    dependsOn: ['field'],
+    ai: { canPropose: true, proposalStrategy: 'conservative' },
     options: [
       { value: 'staff', label: 'Staff only (courses, job shadowing, teaching)' },
       { value: 'learners', label: 'Learners only' },
@@ -65,6 +72,7 @@ const questions: InterviewQuestion[] = [
     question: 'Describe the staff mobilities: type, host country, duration, and what they will do.',
     type: 'textarea',
     next: 'learner_gate',
+    ai: { canPropose: false, cannotInvent: true },
   },
   {
     id: 'learner_gate',
@@ -89,6 +97,9 @@ const questions: InterviewQuestion[] = [
     question: 'Describe the learner mobilities: group size, host, duration, and programme.',
     type: 'textarea',
     next: 'destinations',
+    factKey: 'mobility_format',
+    dependsOn: ['activity_mix'],
+    ai: { canPropose: true, proposalStrategy: 'conservative' },
   },
   {
     id: 'destinations',
@@ -97,6 +108,8 @@ const questions: InterviewQuestion[] = [
     question: 'Which countries and host organisations, and why these hosts for your accredited objectives?',
     type: 'textarea',
     next: 'participant_count',
+    factKey: 'destination_country',
+    ai: { canPropose: false, cannotInvent: true, feasibilityCheck: true },
   },
   {
     id: 'participant_count',
@@ -105,6 +118,9 @@ const questions: InterviewQuestion[] = [
     question: 'How many staff and/or learners will travel in this call year?',
     type: 'text',
     next: 'selection',
+    factKey: 'participant_count',
+    dependsOn: ['activity_mix'],
+    ai: { canPropose: true, proposalStrategy: 'conservative', feasibilityCheck: true },
   },
   {
     id: 'selection',
@@ -113,6 +129,8 @@ const questions: InterviewQuestion[] = [
     question: 'How will you select participants against your accredited plan?',
     type: 'textarea',
     next: 'fewer_opportunities',
+    factKey: 'selection_criteria',
+    ai: { canPropose: true, requiresEvidence: true },
   },
   {
     id: 'fewer_opportunities',
@@ -121,6 +139,7 @@ const questions: InterviewQuestion[] = [
     question: 'How many participants with fewer opportunities, and what support is in place?',
     type: 'textarea',
     next: 'objectives',
+    ai: { canPropose: false, cannotInvent: true },
   },
   {
     id: 'objectives',
@@ -129,6 +148,8 @@ const questions: InterviewQuestion[] = [
     question: 'Which accredited objectives does this year’s mobility advance?',
     type: 'textarea',
     next: 'preparation',
+    factKey: 'learner_need',
+    ai: { canPropose: true, proposalStrategy: 'conservative', requiresEvidence: true },
   },
   {
     id: 'preparation',
@@ -137,6 +158,7 @@ const questions: InterviewQuestion[] = [
     question: 'How do you prepare participants and follow up so learning feeds into the organisation?',
     type: 'textarea',
     next: 'recognition',
+    ai: { canPropose: true, proposalStrategy: 'conservative' },
   },
   {
     id: 'recognition',
@@ -145,6 +167,7 @@ const questions: InterviewQuestion[] = [
     question: 'How will learning be recognised (certificate, Europass, internal validation, sharing with colleagues)?',
     type: 'textarea',
     next: 'impact',
+    ai: { canPropose: true, proposalStrategy: 'conservative' },
   },
   {
     id: 'impact',
@@ -153,6 +176,7 @@ const questions: InterviewQuestion[] = [
     question: 'What organisational change should this year’s mobilities produce, and how will you see it?',
     type: 'textarea',
     next: 'dissemination',
+    ai: { canPropose: true, requiresEvidence: true },
   },
   {
     id: 'dissemination',
@@ -161,6 +185,7 @@ const questions: InterviewQuestion[] = [
     question: 'How will results be shared inside the organisation and with other accredited peers?',
     type: 'textarea',
     next: null,
+    ai: { canPropose: true, proposalStrategy: 'conservative' },
   },
 ]
 

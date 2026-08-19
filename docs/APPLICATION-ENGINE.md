@@ -1,6 +1,6 @@
 # Erasmus AI — Application Intelligence Engine
 
-**Version:** 1.1  
+**Version:** 1.2  
 **Date:** 2026-08-18  
 **Status:** Ready for engineering review  
 **Audience:** AI development team  
@@ -57,6 +57,8 @@ These are not steps in a sequence. They are three views of the same project. The
 
 **Rule:** Generated prose is always derived from facts. If a fact is missing, the system asks — it never invents partners, dates, counts, or needs evidence.
 
+**Plan vs facts:** the AI may invent a **plan**. It may not invent **facts**. A working scenario is a hypothesis until the user confirms it and, where required, supplies evidence. Generation still uses only `locked` + `confirmed` facts.
+
 ---
 
 ## 3. Facts model: provenance and confidence
@@ -97,6 +99,31 @@ Facts are not just key-value pairs. Each fact carries provenance so the generato
 - If a `confirmed` fact conflicts with a later answer (e.g. user enters 30 participants in a different field), the system flags `stale` and asks the user to resolve it — it does not silently pick one value.
 
 **This is the primary defence against hallucination.** The model cannot fill in or invent facts that are `pending` or missing. It must surface the gap instead.
+
+### Fill states (how a requirement is obtained)
+
+The schema defines **what must be known**. The AI decides **how** to obtain, propose, or validate it. Each requirement is in one of:
+
+| State | Meaning | Generation |
+|---|---|---|
+| Known | User or source supplied this. Confidence `confirmed`, status `locked`. | Used |
+| Proposed | AI recommendation or inference. Confidence `suggested` or `inferred`, status `pending`. | Not used |
+| Must confirm | Cannot be invented (host school, accreditation, dates, evidence). | Not used |
+| Missing | No value yet. | Not used |
+
+Epistemic kinds on a candidate value:
+
+| Kind | Meaning |
+|---|---|
+| Fact | Supplied by the user or a source |
+| Inference | Logically derived (e.g. two-month learner stay → individual mobility) |
+| Recommendation | AI’s proposed choice (e.g. 2 learners as a first-time scale) |
+| Missing | Genuinely unknown |
+| Unsupported | Claimed without evidence — cannot be used as a needs analysis |
+
+Pipeline: **requirement → candidate answer → evidence → feasibility → confirmation**.
+
+A conservative first-time plan is allowed. It is recalculated when budget or capacity arrives. Feasibility uses a planning estimate, not official unit costs. Suggestions never become application truth until the user confirms them.
 
 ### Minimum fact set before generation (KA153)
 
@@ -194,11 +221,12 @@ Chat is an AI project-development and coaching interface.
 Behaviours:
 
 1. Help the user develop a vague idea into a strong project concept.
-2. Ask useful questions to fill gaps — do not immediately generate polished text.
-3. Extract facts into Application State as the conversation progresses.
-4. Never paste a full application or template from chat. If they ask, list missing facts and point to the questionnaire or generator.
+2. If they have no plan, propose a conservative working scenario (fact / inference / recommendation / missing). Do not bounce a questionnaire.
+3. Recalculate when they give a budget, capacity, or other constraint. Do not keep an infeasible plan.
+4. Extract facts into Application State as the conversation progresses. Extracted values stay `pending` until confirmed.
+5. Never paste a full application or template from chat. If they ask, list missing facts and point to Requirements or Generate from this thread.
 
-Chat already has a `chat-coach` skill (`app/resources/skills/chat-coach/SKILL.md`). Extend it to write extracted facts into the Application State record.
+Chat already has a `chat-coach` skill (`app/resources/skills/chat-coach/SKILL.md`). KA121 first-time defaults live in `proposals` (web + API). The questionnaire list is not the intelligence.
 
 ---
 
@@ -210,7 +238,7 @@ Once the action is locked, the Requirements view is generated from the form sche
 Locked Action → Form Schema → Required fields → Questionnaire
 ```
 
-Current state: question banks in `app/web/src/lib/grants/banks/` are hand-written per family. These become schema-driven — the requirements list is generated from the form schema, not maintained as a parallel data structure.
+Current state: question banks in `app/web/src/lib/grants/banks/` are hand-written per family. These become schema-driven — the requirements list is generated from the form schema, not maintained as a parallel data structure. Field `ai` metadata (`canPropose`, `requiresEvidence`, `feasibilityCheck`, `cannotInvent`) tells the engine how a gap may be filled. KA121 shows a **Proposed project setup** the user can confirm or change. Proposed values do not count as complete.
 
 ### Intelligent answer assessment
 

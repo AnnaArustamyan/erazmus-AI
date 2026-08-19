@@ -30,6 +30,7 @@ describe('pass-rate knowledge pack', () => {
 
     expect(prompt).toContain('You are Erasmus AI, a coach.');
     expect(prompt).toContain('never dump a blank');
+    expect(prompt).toContain('working scenario');
     expect(prompt).not.toContain('Start with a single H1 title line');
     expect(prompt).not.toContain('Right beneficiary');
     expect(prompt.length).toBeLessThan(8_000);
@@ -49,6 +50,19 @@ describe('pass-rate knowledge pack', () => {
     expect(prompt).toContain('EX-');
     expect(prompt).not.toMatch(/KA153-YOU-000/);
     expect(prompt).not.toContain('Start with a single H1 title line');
+  });
+
+  it('tells KA121 chat to propose a working scenario rather than interview', () => {
+    const prompt = buildPassRateSystemPrompt({
+      agentSystemPrompt: 'You are Erasmus AI, a coach.',
+      queryText: 'KA121 school learner 2 months I have no plan',
+      latestUserMessage: 'I have no plan',
+      mode: 'chat',
+      actionCode: 'KA121',
+    });
+    expect(prompt).toContain('Plan vs facts');
+    expect(prompt).toContain('working scenario');
+    expect(prompt).not.toContain('Right beneficiary');
   });
 
   it('retrieves APV failure notes for preparatory-visit queries on youth actions', () => {

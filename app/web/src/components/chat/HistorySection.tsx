@@ -21,7 +21,7 @@ export function HistorySection({
       <button
         type="button"
         onClick={() => onNewChat?.()}
-        className="mb-4 flex items-center justify-center gap-2 border border-app-border bg-app-surface px-3 py-2 text-sm font-medium text-app-text hover:bg-app-panel-2 focus-visible:outline-2 focus-visible:outline-app-accent focus-visible:outline-offset-2"
+        className="mb-4 flex items-center justify-center gap-2 rounded-lg border border-app-border bg-app-surface px-3 py-2 text-sm font-medium text-app-text hover:bg-app-panel-2 focus-visible:outline-2 focus-visible:outline-app-accent focus-visible:outline-offset-2"
       >
         <Plus size={14} aria-hidden="true" />
         New chat
@@ -50,10 +50,10 @@ export function HistorySection({
                   type="button"
                   onClick={() => onSelectConversation?.(conversation.id)}
                   aria-current={isActive ? 'true' : undefined}
-                  className={`flex w-full items-center py-2 pl-2.5 pr-7 text-left text-[13px] transition-colors focus-visible:outline-2 focus-visible:outline-app-accent focus-visible:outline-offset-2 ${
+                  className={`flex w-full items-center rounded-lg py-2 pl-2.5 pr-7 text-left text-[13px] transition-colors focus-visible:outline-2 focus-visible:outline-app-accent focus-visible:outline-offset-2 ${
                     isActive
-                      ? 'border-l-2 border-app-accent bg-app-panel-2 font-medium text-app-text'
-                      : 'border-l-2 border-transparent text-app-text-dim hover:bg-app-panel-2 hover:text-app-text'
+                      ? 'bg-app-accent-soft font-medium text-app-text'
+                      : 'text-app-text-dim hover:bg-app-panel-2 hover:text-app-text'
                   }`}
                 >
                   <span className="truncate">{label}</span>

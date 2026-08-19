@@ -10,6 +10,7 @@ import {
 } from '../lib/draftQuality.js';
 import { buildPassRateSystemPrompt } from '../lib/passRate.js';
 import { inferActionCode } from '../lib/applicationSchema.js';
+import { formatWorkingScenarioBlock } from '../lib/proposals.js';
 import { loadAttachmentExcerpt } from '../lib/extractAttachmentText.js';
 import { getPlanConfig } from '../lib/plans.js';
 import { estimateTokensFromText, readUsageTotalTokens } from '../lib/tokenUsage.js';
@@ -59,6 +60,7 @@ router.post('/', verifyAuth, async (req, res) => {
     editMessageId,
     documentId,
     actionCode: rawActionCode,
+    grantAnswers,
   } = req.body ?? {};
 
   const agentId = rawAgentId ? rawAgentId : DEFAULT_AGENT_ID;
@@ -217,6 +219,13 @@ router.post('/', verifyAuth, async (req, res) => {
       : inferActionCode(queryText);
   const actionConfirmed = typeof rawActionCode === 'string' && Boolean(rawActionCode.trim());
   const draftingDocument = documentAction === 'revise' && Boolean(existingDoc);
+  const answers =
+    grantAnswers && typeof grantAnswers === 'object' && !Array.isArray(grantAnswers) ? grantAnswers : {};
+  const scenarioBlock = formatWorkingScenarioBlock({
+    actionCode: resolvedAction,
+    answers,
+    queryText,
+  });
   const handoff = documentAction === 'handoff';
   const chatMessages = draftingDocument
     ? [
@@ -246,7 +255,9 @@ ${
   actionConfirmed
     ? `Action is user-confirmed: ${resolvedAction}. Do not switch it.`
     : `Action is not confirmed.${resolvedAction ? ` You may recommend ${resolvedAction} as a suggestion.` : ''} Ask the user to confirm the exact action code before any generation. A vague youth project is not enough to choose KA152 vs KA153 vs KA154.`
-}`,
+}
+
+${scenarioBlock}`,
             queryText,
             latestUserMessage: message,
             mode: 'chat',

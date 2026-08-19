@@ -6,6 +6,7 @@ interface CreateApiChatClientOptions {
   getAccessToken: () => string | null
   initialConversationId?: string
   getActionCode?: () => string | null
+  getGrantAnswers?: () => Record<string, string>
   onConversationChange?: (conversationId: string) => void
 }
 
@@ -14,6 +15,7 @@ export function createApiChatClient({
   getAccessToken,
   initialConversationId,
   getActionCode,
+  getGrantAnswers,
   onConversationChange,
 }: CreateApiChatClientOptions): SendMessageFn {
   let conversationId = initialConversationId
@@ -58,6 +60,7 @@ export function createApiChatClient({
           editMessageId: editMessageId || undefined,
           documentId: documentId || undefined,
           actionCode: getActionCode?.() || undefined,
+          grantAnswers: getGrantAnswers?.() || undefined,
         }),
       })
     } catch (err) {

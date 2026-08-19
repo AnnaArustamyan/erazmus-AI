@@ -4,7 +4,7 @@ import { confirmedActionCode } from '../../lib/grants/activeGrant'
 
 export function ApplicationSwitcher() {
   const navigate = useNavigate()
-  const { grants, activeGrant, setActiveGrant, startNewApplication } = useGrantInterview()
+  const { grants, activeGrant, setActiveGrant } = useGrantInterview()
   const label = activeGrant
     ? `${confirmedActionCode(activeGrant) ?? 'Action not confirmed'} · ${activeGrant.title}`
     : 'No active application'
@@ -21,7 +21,7 @@ export function ApplicationSwitcher() {
           if (!e.target.value) return
           setActiveGrant(e.target.value)
         }}
-        className="max-w-[14rem] truncate border border-app-border bg-app-surface px-2 py-1 text-xs text-app-text sm:max-w-xs"
+        className="max-w-[14rem] truncate rounded-lg border border-app-border bg-app-surface px-2.5 py-1.5 text-xs text-app-text sm:max-w-xs"
       >
         {grants.length === 0 ? (
           <option value="">{label}</option>
@@ -35,18 +35,8 @@ export function ApplicationSwitcher() {
       </select>
       <button
         type="button"
-        onClick={() => {
-          startNewApplication()
-          navigate('/chat', { state: { newChat: true } })
-        }}
-        className="shrink-0 text-[11px] text-app-text-dim hover:text-app-text"
-      >
-        New
-      </button>
-      <button
-        type="button"
         onClick={() => navigate('/grants')}
-        className="shrink-0 text-[11px] text-app-text-dim hover:text-app-text"
+        className="shrink-0 rounded-lg px-2 py-1 text-[11px] text-app-text-dim hover:bg-app-panel-2 hover:text-app-text"
       >
         All
       </button>
