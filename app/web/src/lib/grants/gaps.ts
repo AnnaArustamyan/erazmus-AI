@@ -1,5 +1,5 @@
 import { QUESTION_GRAPHS } from './banks'
-import { ka153FormSchema } from './schemas/ka153'
+import { schemaForAction as loadReviewedSchema } from './schemas/registry'
 import {
   assessAnswer,
   flattenFormFields,
@@ -59,7 +59,8 @@ export function fieldsForGraph(graph: QuestionGraph): FormField[] {
 }
 
 export function fieldsForAction(actionCode: string): FormField[] {
-  if (actionCode === 'KA153') return flattenFormFields(ka153FormSchema)
+  const schema = loadReviewedSchema(actionCode)
+  if (schema) return flattenFormFields(schema)
   const graph = QUESTION_GRAPHS[actionCode]
   return graph ? fieldsForGraph(graph) : []
 }

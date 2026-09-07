@@ -518,7 +518,7 @@ export function ErasmusChatWorkspace({
               data-testid="active-agent-pill"
               className="truncate text-sm font-medium text-app-text"
             >
-              {activeAgent?.name ?? 'Erasmus AI'}
+              {activeAgent?.name ?? 'EU Grantwriter'}
             </div>
             {canvasDocument && !canvasOpen && (
               <DocumentCanvasToggle onClick={() => setCanvasOpen(true)} />
@@ -527,9 +527,9 @@ export function ErasmusChatWorkspace({
               <button
                 type="button"
                 onClick={onStartQuestionnaire}
-                className="shrink-0 rounded-lg border border-app-border px-2.5 py-1 text-xs text-app-text-dim hover:text-app-text"
+                className="shrink-0 rounded-lg border border-app-border px-2.5 py-1 text-xs text-app-text-dim transition-colors duration-150 hover:text-app-text"
               >
-                Requirements
+                Application Form
               </button>
             )}
             {onGenerateFromThread && (
@@ -631,6 +631,10 @@ export function ErasmusChatWorkspace({
           onFileSelected={handleFileSelected}
           onStop={handleStop}
           hasDocument={Boolean(canvasDocument)}
+          usagePercent={usagePercent}
+          remainingTokens={remainingTokens}
+          tokenLimit={effectiveTokenBalance.limit}
+          onUpgrade={() => { window.location.href = '/settings/usage' }}
         />
         </div>
         {canvasOpen && (

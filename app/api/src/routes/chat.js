@@ -304,6 +304,7 @@ ${scenarioBlock}`,
       const provider = await streamChatForPlan({
         plan: profile.plan,
         messages: chatMessages,
+        reasoningEffort: 'high',
         signal: abortController.signal,
         onDelta: (delta) => {
           contentMd += delta;
@@ -334,6 +335,7 @@ ${scenarioBlock}`,
       const provider = await streamChatForPlan({
         plan: profile.plan,
         messages: chatMessages,
+        reasoningEffort: 'low',
         signal: abortController.signal,
         onDelta: (delta) => {
           fullText += delta;

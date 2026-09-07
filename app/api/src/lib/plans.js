@@ -20,6 +20,10 @@ export const PLANS = {
     canGenerateDocuments: true,
     monthlyDocumentLimit: 3,
     canUseAdvancedAgents: true,
+    /** null = unpriced */
+    priceUsd: null,
+    /** Free-tier generated documents expire; paid plans keep them indefinitely (PRODUCT-SPEC.md §8). */
+    documentRetentionDays: 30,
   },
   basic: {
     id: 'basic',
@@ -31,6 +35,8 @@ export const PLANS = {
     canGenerateDocuments: true,
     monthlyDocumentLimit: 20,
     canUseAdvancedAgents: true,
+    priceUsd: 19,
+    documentRetentionDays: null,
   },
   pro: {
     id: 'pro',
@@ -42,6 +48,8 @@ export const PLANS = {
     canGenerateDocuments: true,
     monthlyDocumentLimit: 100,
     canUseAdvancedAgents: true,
+    priceUsd: 49,
+    documentRetentionDays: null,
   },
   enterprise: {
     id: 'enterprise',
@@ -53,6 +61,9 @@ export const PLANS = {
     canGenerateDocuments: true,
     monthlyDocumentLimit: 100,
     canUseAdvancedAgents: true,
+    /** null = "Custom (contact sales)", not literally free — see PRODUCT-SPEC.md §8 */
+    priceUsd: null,
+    documentRetentionDays: null,
   },
 };
 
@@ -77,6 +88,8 @@ export function planFeatures(plan) {
     monthlyDocumentLimit: config.monthlyDocumentLimit,
     canUseAdvancedAgents: config.canUseAdvancedAgents,
     monthlyTokenLimit: config.monthlyTokenLimit,
+    priceUsd: config.priceUsd,
+    documentRetentionDays: config.documentRetentionDays,
   };
 }
 

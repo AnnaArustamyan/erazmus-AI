@@ -1,4 +1,5 @@
 import Markdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 
 interface MessageContentProps {
   text: string
@@ -14,6 +15,7 @@ export function MessageContent({ text, markdown = false }: MessageContentProps) 
   return (
     <div className="chat-md break-words">
       <Markdown
+        remarkPlugins={[remarkGfm]}
         components={{
           a: ({ href, children }) => (
             <a href={href} target="_blank" rel="noreferrer">

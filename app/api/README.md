@@ -1,4 +1,4 @@
-# Erasmus AI — API (`app/api`)
+# EU Grantwriter — API (`app/api`)
 
 Express API: auth, streaming chat, conversations, uploads, documents.
 

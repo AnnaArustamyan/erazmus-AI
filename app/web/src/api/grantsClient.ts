@@ -64,3 +64,42 @@ export async function updateGrant(
   const body = (await res.json()) as { grant: GrantApplication }
   return fromApi(body.grant)
 }
+
+export type GateStatus = 'pass' | 'fail' | 'review'
+
+export interface ValidationReport {
+  actionCode: string | null
+  findings: Array<{
+    id: string
+    level: 'critical' | 'major' | 'minor'
+    gate: string
+    layer: string
+    location?: string
+    message: string
+    suggestion?: string
+  }>
+  readiness: {
+    status: 'not_ready' | 'in_review'
+    counts: { critical: number; major: number; minor: number }
+    gates: {
+      schema: GateStatus
+      compliance: GateStatus
+      consistency: GateStatus
+      evidence: GateStatus
+      quality: GateStatus
+    }
+  }
+}
+
+export async function validateGrant(
+  accessToken: string | null,
+  id: string,
+): Promise<{ grant: GrantApplication; report: ValidationReport }> {
+  const res = await apiFetch(`/api/grants/${id}/validate`, {
+    method: 'POST',
+    accessToken,
+  })
+  if (!res.ok) throw new Error(await parseErrorBody(res, 'Could not validate grant application'))
+  const body = (await res.json()) as { grant: GrantApplication; report: ValidationReport }
+  return { grant: fromApi(body.grant), report: body.report }
+}

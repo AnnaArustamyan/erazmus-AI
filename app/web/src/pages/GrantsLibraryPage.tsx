@@ -4,6 +4,7 @@ import { FileStack, Plus } from 'lucide-react'
 import { useGrantInterview } from '../grants/GrantInterviewContext'
 import { ACTION_TYPES } from '../lib/grants/actionTypes'
 import type { GrantStatus } from '../lib/grants/types'
+import { Select } from '../components/ui/Select'
 
 function formatWhen(iso: string): string {
   return new Date(iso).toLocaleString()
@@ -40,7 +41,8 @@ export function GrantsLibraryPage() {
         <FileStack size={22} className="mb-3 text-app-text-dim" />
         <h1 className="font-display text-lg font-semibold text-app-text">No applications yet</h1>
         <p className="mt-1.5 max-w-md text-center text-sm text-app-text-dim">
-          Pick an application to make it active. Chat, Requirements, and My Application all use that same record.
+          Pick an application to make it active. Chat, Application Form, and My Application all use that same
+          record.
         </p>
         <button
           type="button"
@@ -69,28 +71,29 @@ export function GrantsLibraryPage() {
           </button>
         </div>
         <div className="mb-5 flex flex-wrap gap-2">
-          <select
+          <Select
+            aria-label="Filter by action type"
             value={actionFilter}
-            onChange={(e) => setActionFilter(e.target.value)}
-            className="rounded-lg border border-app-border bg-app-surface px-2 py-1.5 text-sm"
-          >
-            <option value="all">All action types</option>
-            {ACTION_TYPES.filter((a) => a.supported).map((action) => (
-              <option key={action.code} value={action.code}>
-                {action.code}
-              </option>
-            ))}
-          </select>
-          <select
+            onValueChange={setActionFilter}
+            options={[
+              { value: 'all', label: 'All action types' },
+              ...ACTION_TYPES.filter((a) => a.supported).map((action) => ({
+                value: action.code,
+                label: action.code,
+              })),
+            ]}
+          />
+          <Select
+            aria-label="Filter by status"
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as 'all' | GrantStatus)}
-            className="rounded-lg border border-app-border bg-app-surface px-2 py-1.5 text-sm"
-          >
-            <option value="all">All statuses</option>
-            <option value="draft">Draft</option>
-            <option value="in_review">In review</option>
-            <option value="ready">Ready</option>
-          </select>
+            onValueChange={(v) => setStatusFilter(v as 'all' | GrantStatus)}
+            options={[
+              { value: 'all', label: 'All statuses' },
+              { value: 'draft', label: 'Draft' },
+              { value: 'in_review', label: 'In review' },
+              { value: 'ready', label: 'Ready' },
+            ]}
+          />
         </div>
         {filtered.length === 0 ? (
           <p className="text-sm text-app-text-dim">No applications match these filters.</p>

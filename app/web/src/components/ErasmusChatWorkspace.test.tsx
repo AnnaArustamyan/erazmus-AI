@@ -25,7 +25,7 @@ describe('ErasmusChatWorkspace — rendering', () => {
   it('renders the brand and does not show specialist agent tabs', () => {
     renderWorkspace()
 
-    expect(screen.getAllByText('Erasmus AI').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('EU Grantwriter').length).toBeGreaterThan(0)
     expect(screen.getByText(/KA1 and KA2 drafts under Programme Guide pass rules/i)).toBeInTheDocument()
     expect(screen.queryByRole('tablist', { name: /specialized ai agents/i })).not.toBeInTheDocument()
     expect(screen.queryByRole('tab')).not.toBeInTheDocument()
@@ -33,7 +33,7 @@ describe('ErasmusChatWorkspace — rendering', () => {
 
   it('renders the grant assistant pill', () => {
     renderWorkspace()
-    expect(screen.getByTestId('active-agent-pill')).toHaveTextContent('Erasmus AI')
+    expect(screen.getByTestId('active-agent-pill')).toHaveTextContent('EU Grantwriter')
   })
 
   it('renders the token balance with progressbar and formatted counts', () => {
@@ -63,7 +63,7 @@ describe('ErasmusChatWorkspace — rendering', () => {
   it('renders the composer and a disabled send button when the draft is empty', () => {
     renderWorkspace()
     expect(
-      screen.getByRole('textbox', { name: /message erasmus ai/i }),
+      screen.getByRole('textbox', { name: /message eu grantwriter/i }),
     ).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /send message/i })).toBeDisabled()
   })
@@ -85,7 +85,7 @@ describe('ErasmusChatWorkspace — message dispatching', () => {
 
     renderWorkspace({ sendMessage, onTokenBalanceChange })
 
-    const textbox = screen.getByRole('textbox', { name: /message erasmus ai/i })
+    const textbox = screen.getByRole('textbox', { name: /message eu grantwriter/i })
     await user.type(textbox, 'What are the eligible countries for KA2?')
     await user.click(screen.getByRole('button', { name: /send message/i }))
 
@@ -94,7 +94,7 @@ describe('ErasmusChatWorkspace — message dispatching', () => {
     ).toBeInTheDocument()
     expect(textbox).toHaveValue('')
     expect(screen.getByRole('button', { name: /stop generating/i })).toBeInTheDocument()
-    expect(screen.getByText(/erasmus ai is writing/i)).toBeInTheDocument()
+    expect(screen.getByText(/eu grantwriter is writing/i)).toBeInTheDocument()
     expect(sendMessage).toHaveBeenCalledWith(
       expect.objectContaining({
         text: 'What are the eligible countries for KA2?',
@@ -108,7 +108,7 @@ describe('ErasmusChatWorkspace — message dispatching', () => {
     expect(
       await screen.findByText('Here are the eligible KA2 countries…'),
     ).toBeInTheDocument()
-    expect(screen.queryByText(/erasmus ai is writing/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/eu grantwriter is writing/i)).not.toBeInTheDocument()
     expect(screen.getByRole('group', { name: /token balance/i })).toHaveTextContent(
       '500 / 3,000,000',
     )
@@ -127,7 +127,7 @@ describe('ErasmusChatWorkspace — message dispatching', () => {
     renderWorkspace({ sendMessage, onTokenBalanceChange })
 
     await user.type(
-      screen.getByRole('textbox', { name: /message erasmus ai/i }),
+      screen.getByRole('textbox', { name: /message eu grantwriter/i }),
       'What is KA153?',
     )
     await user.click(screen.getByRole('button', { name: /send message/i }))
@@ -144,7 +144,7 @@ describe('ErasmusChatWorkspace — message dispatching', () => {
     const sendMessage = vi.fn<SendMessageFn>().mockResolvedValue('ok')
     renderWorkspace({ sendMessage })
 
-    const textbox = screen.getByRole('textbox', { name: /message erasmus ai/i })
+    const textbox = screen.getByRole('textbox', { name: /message eu grantwriter/i })
     await user.type(textbox, 'line one{Shift>}{Enter}{/Shift}line two')
     expect(textbox).toHaveValue('line one\nline two')
     expect(sendMessage).not.toHaveBeenCalled()
@@ -162,7 +162,7 @@ describe('ErasmusChatWorkspace — message dispatching', () => {
     const sendButton = screen.getByRole('button', { name: /send message/i })
     expect(sendButton).toBeDisabled()
 
-    const textbox = screen.getByRole('textbox', { name: /message erasmus ai/i })
+    const textbox = screen.getByRole('textbox', { name: /message eu grantwriter/i })
     await user.type(textbox, '   ')
     expect(sendButton).toBeDisabled()
 
@@ -182,7 +182,7 @@ describe('ErasmusChatWorkspace — message dispatching', () => {
 
     renderWorkspace({ sendMessage })
 
-    const textbox = screen.getByRole('textbox', { name: /message erasmus ai/i })
+    const textbox = screen.getByRole('textbox', { name: /message eu grantwriter/i })
     await user.type(textbox, 'Check section D please')
     await user.click(screen.getByRole('button', { name: /send message/i }))
 
@@ -221,7 +221,7 @@ describe('ErasmusChatWorkspace — streaming', () => {
 
     renderWorkspace({ sendMessage })
 
-    const textbox = screen.getByRole('textbox', { name: /message erasmus ai/i })
+    const textbox = screen.getByRole('textbox', { name: /message eu grantwriter/i })
     await user.type(textbox, 'Stream this please')
     await user.click(screen.getByRole('button', { name: /send message/i }))
 
@@ -239,7 +239,7 @@ describe('ErasmusChatWorkspace — streaming', () => {
 
     renderWorkspace({ sendMessage })
 
-    const textbox = screen.getByRole('textbox', { name: /message erasmus ai/i })
+    const textbox = screen.getByRole('textbox', { name: /message eu grantwriter/i })
     await user.type(textbox, 'Will this fail?')
     await user.click(screen.getByRole('button', { name: /send message/i }))
 
@@ -298,7 +298,7 @@ describe('ErasmusChatWorkspace — attachments', () => {
     expect(await screen.findByText('plan.pdf')).toBeInTheDocument()
 
     await user.type(
-      screen.getByRole('textbox', { name: /message erasmus ai/i }),
+      screen.getByRole('textbox', { name: /message eu grantwriter/i }),
       'Review this please',
     )
     await user.click(screen.getByRole('button', { name: /send message/i }))
@@ -311,7 +311,7 @@ describe('ErasmusChatWorkspace — attachments', () => {
       expect.any(Function),
     )
     // Chip now belongs to the sent message, not the (cleared) composer.
-    const composerForm = screen.getByRole('textbox', { name: /message erasmus ai/i }).closest('form')
+    const composerForm = screen.getByRole('textbox', { name: /message eu grantwriter/i }).closest('form')
     expect(within(composerForm as HTMLElement).queryByText('plan.pdf')).not.toBeInTheDocument()
     expect(screen.getByText('plan.pdf')).toBeInTheDocument()
   })
@@ -349,7 +349,7 @@ describe('ErasmusChatWorkspace — token exhaustion guard', () => {
       tokenBalance: { used: 100_000, limit: 100_000 },
     })
 
-    const textbox = screen.getByRole('textbox', { name: /message erasmus ai/i })
+    const textbox = screen.getByRole('textbox', { name: /message eu grantwriter/i })
     expect(textbox).toBeDisabled()
     expect(textbox).toHaveAttribute(
       'placeholder',
@@ -362,7 +362,7 @@ describe('ErasmusChatWorkspace — token exhaustion guard', () => {
     await user.click(sendButton)
     expect(sendMessage).not.toHaveBeenCalled()
 
-    expect(screen.getByRole('alert')).toHaveTextContent(/upgrade to keep drafting/i)
+    expect(screen.getByText(/upgrade to keep drafting/i)).toBeInTheDocument()
   })
 })
 
@@ -542,7 +542,7 @@ describe('ErasmusChatWorkspace — message actions', () => {
     })
 
     await user.click(screen.getAllByRole('button', { name: /edit and resend/i })[0])
-    const textbox = screen.getByRole('textbox', { name: /message erasmus ai/i })
+    const textbox = screen.getByRole('textbox', { name: /message eu grantwriter/i })
     expect(textbox).toHaveValue('Draft the needs analysis')
     await user.clear(textbox)
     await user.type(textbox, 'Rewrite needs with worker surveys')
@@ -573,7 +573,7 @@ describe('ErasmusChatWorkspace — message actions', () => {
     renderWorkspace({ sendMessage })
 
     await user.type(
-      screen.getByRole('textbox', { name: /message erasmus ai/i }),
+      screen.getByRole('textbox', { name: /message eu grantwriter/i }),
       'Write the impact section',
     )
     await user.click(screen.getByRole('button', { name: /send message/i }))
@@ -620,7 +620,7 @@ describe('ErasmusChatWorkspace — document canvas', () => {
     renderWorkspace({ initialDocument: draft, sendMessage })
 
     await user.type(
-      screen.getByRole('textbox', { name: /message erasmus ai/i }),
+      screen.getByRole('textbox', { name: /message eu grantwriter/i }),
       'Make the objectives more concrete',
     )
     await user.click(screen.getByRole('button', { name: /send message/i }))
@@ -649,7 +649,7 @@ describe('ErasmusChatWorkspace — document canvas', () => {
     renderWorkspace({ sendMessage })
 
     await user.type(
-      screen.getByRole('textbox', { name: /message erasmus ai/i }),
+      screen.getByRole('textbox', { name: /message eu grantwriter/i }),
       'Draft a KA153 application',
     )
     await user.click(screen.getByRole('button', { name: /send message/i }))

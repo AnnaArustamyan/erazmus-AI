@@ -1,7 +1,12 @@
 {
   "permissions": {
     "allow": [
-      "PowerShell($env:Path = \"C:\\\\Program Files\\\\nodejs;$env:Path\"; cd \"C:\\\\Users\\\\nicka\\\\Downloads\\\\erasmus-project\\\\erasmus-project\\\\erasmus-backend\"; node --check src/config/moonshot.js; node --check src/routes/chat.js; \"syntax OK\")"
+      "PowerShell($env:Path = \"C:\\\\Program Files\\\\nodejs;$env:Path\"; cd \"C:\\\\Users\\\\nicka\\\\Downloads\\\\erasmus-project\\\\erasmus-project\\\\erasmus-backend\"; node --check src/config/moonshot.js; node --check src/routes/chat.js; \"syntax OK\")",
+      "Bash(python3 -c ' *)",
+      "Bash(curl -s -o source-sans-3.woff2 \"https://fonts.gstatic.com/s/sourcesans3/v19/nwpStKy2OAdR1K-IwhWudF-R3w8aZejf5Hc.woff2\")",
+      "Bash(curl -s -o source-serif-4.woff2 \"https://fonts.gstatic.com/s/sourceserif4/v14/vEFI2_tTDB4M7-auWDN0ahZJW1gb8te1Xb7G.woff2\")",
+      "Bash(base64 -i source-sans-3.woff2 -o source-sans-3.b64)",
+      "Bash(base64 -i source-serif-4.woff2 -o source-serif-4.b64)"
     ]
   }
 }

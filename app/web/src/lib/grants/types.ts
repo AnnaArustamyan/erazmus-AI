@@ -86,15 +86,4 @@ export interface GrantApplication {
   updatedAt: string
 }
 
-export interface ProjectPlan {
-  id: string
-  title: string
-  contentMd: string
-  sourcePrompt: string
-  documentId?: string
-  downloads?: { pdf?: string; md?: string; docx?: string }
-  createdAt: string
-  updatedAt: string
-}
-
 export type BuilderStep = 'picker' | 'workspace' | 'interview' | 'review' | 'result'

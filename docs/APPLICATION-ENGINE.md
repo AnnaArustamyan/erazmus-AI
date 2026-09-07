@@ -1,11 +1,11 @@
-# Erasmus AI — Application Intelligence Engine
+# EU Grantwriter — Application Intelligence Engine
 
-**Version:** 1.2  
-**Date:** 2026-08-18  
+**Version:** 1.3  
+**Date:** 2026-08-20  
 **Status:** Ready for engineering review  
 **Audience:** AI development team  
-**Depends on:** REQUIREMENTS.md v1.2 (SaaS shell, plans, chat controls, session)  
-**Codebase:** `app/web`, `app/api`, `app/resources/`
+**Depends on:** REQUIREMENTS.md v1.2 (SaaS shell, plans, chat controls, session), PRODUCT-SPEC.md v1.1  
+**Codebase:** `app/web`, `app/api`, `app/resources/`, `tools/schema-sync/`
 
 ---
 
@@ -155,8 +155,9 @@ The AI may recommend an action from conversation context, but generation is refu
 
 ### Current state (what to fix)
 
-- `KA152-154` is one picker code with a later branch. This violates the exact-action rule. Split into three codes at the schema level.
-- `KA210` / `KA220` are marked `supported: true` in `actionTypes.ts`. Per REQUIREMENTS.md FR-ACT-2, they should be `supported: false` until KA1 gates are green.
+- `KA210` / `KA220` are correctly `supported: false` in `actionTypes.ts` today — that part of the original note is resolved.
+- Live bug: `KA121`, `KA122`, `KA131/171`, `KA152`, and `KA154` are marked `supported: true` in `actionTypes.ts`, but only `KA153` has a reviewed schema anywhere in `app/resources/schemas/`. Picking any of the other five currently returns a `null` schema from `schemaForAction()`.
+- Fix: move `supported` off the hand-set boolean entirely. Once the schema manifest (§5) exists, `supported` is derived from "does this action have a reviewed schema entry in the manifest" — not set by hand per action.
 
 ---
 
@@ -207,10 +208,25 @@ EvaluationSchema
 └── passingCondition: "≥60 total AND ≥50% each criterion"
 ```
 
+### C. Schema manifest — how schemas get loaded
+
+A single manifest (`app/resources/schemas/manifest.json` or equivalent) lists every action's schema location and its `supported` flag:
+
+```json
+{
+  "KA153": { "callYear": 2026, "supported": true,  "dir": "ka153-you-2026" },
+  "KA152": { "callYear": 2026, "supported": false, "dir": "ka152-you-2026" }
+}
+```
+
+`formSchemas.js` (API), and `schemaForAction()` / `fieldsForAction()` / `ActionTypePicker` (web) all read this manifest instead of hardcoding a per-action branch. Adding or updating an action never requires a frontend code change — only a manifest entry, written by `tools/schema-sync/src/sync.js` after human review passes (§21).
+
 ### Source policy
 
 - **Programme Guide** (public, yearly): the rule source. Cite section + year on every rule.
-- **Official application environment** (webgate.ec.europa.eu): observe the form structure, encode by hand into versioned JSON. Do NOT scrape, do NOT ingest live. The user copies our coaching draft into the official portal.
+- **Official application environment** (webgate.ec.europa.eu): schema generation is AI-assisted, not live-scraped and not purely hand-authored. `tools/schema-sync` downloads the official call-template PDF, extracts its text, and uses a model to draft the form + evaluation schema JSON. That draft is never trusted directly — it goes through the human review checklist in `tools/schema-sync/README.md` (character limits, select options, conditional-field logic, criteria weights summing to 100, no cross-action rule bleed) before `sync.js` promotes it into `app/resources/schemas/` and the manifest. The product never ingests the portal live at request time, and never shows a user anything the pipeline generated but a human hasn't reviewed. The user still copies our coaching draft into the official portal by hand — we never submit on their behalf.
+
+*(This supersedes the "encode by hand, do NOT scrape, automated ingestion is a non-goal" language in earlier drafts of this document — that described the intended v1 process before `tools/schema-sync` was built. The AI-assisted-with-mandatory-human-review pipeline is what actually ships; the discipline is in the review step, not in banning automation of the first draft.)*
 
 ---
 
@@ -400,9 +416,9 @@ An application passes through gates sequentially:
 | 4. Evidence | Evidence tracing (Layer C) | All mapped sub-criteria have sufficiently specific evidence |
 | 5. Quality | Model rubric (Layer D) | No critical weaknesses against applicable award criteria |
 
-### Status display — no numerical score until calibrated
+### Status display — no numerical score, permanently
 
-The primary readiness result is a **status + gate summary**, not a number.
+The readiness result is a **status + gate summary**, not a number — and this is a permanent product decision, not a placeholder pending calibration (resolved 2026-08-20; see PRODUCT-SPEC.md §11 OQ-3).
 
 ```
 APPLICATION STATUS
@@ -420,15 +436,7 @@ Evidence:    FAIL
 Quality:     REVIEW NEEDED
 ```
 
-**Do not ship a numerical score (e.g. "74/100") until:**
-
-1. The golden test set exists (§19)
-2. The system's output on those tests is calibrated and stable (±5% on the same draft)
-3. There is documented methodology for what each point represents
-
-A number without calibration will be read as "74% chance of funding" regardless of any disclaimer. The gate-pass display communicates the same information without that risk.
-
-**When a numerical score is introduced later**, it communicates application completeness and compliance — not funding probability. The UI copy must say: *This score reflects how well the draft satisfies the known structural, compliance, and evidence requirements for this action and year. It does not predict funding.*
+**Never ship a numerical score (e.g. "74/100").** Not after the golden test set exists (§19), not after calibration, not with a disclaimer attached. A number will be read as "74% chance of funding" regardless of any caveat next to it — that risk doesn't go away with calibration, so there is no threshold that unlocks a score. The gate-pass display communicates the same completeness/compliance information without that risk, permanently.
 
 ### What "ready" means (UI copy, put this verbatim)
 
@@ -630,16 +638,16 @@ Untestable rules do not ship. If you cannot write a test case that would fail wi
 
 ## 21. Yearly refresh
 
-When the new Programme Guide is published:
+When the new Programme Guide and call templates are published (usually November, for the following year's calls):
 
-1. Update form schemas (field changes, new conditionals)
-2. Update evaluation schemas (criteria weight changes, new sub-criteria)
-3. Bump `callYear` in config
-4. Re-run golden tests against new schemas
+1. Run `tools/schema-sync`: `extract.js` → `generate.js` → `validate.js` → `diff.js` against the new PDF for each action
+2. Complete the human review checklist (`tools/schema-sync/README.md`) on the AI-drafted schema — character limits, select options, conditional logic, criteria weights, cross-action bleed
+3. `sync.js` promotes the reviewed schema into `app/resources/schemas/` and updates the manifest entry (§5), bumping `callYear`
+4. Re-run golden tests against the new schemas (§19)
 5. Update `derived/rules.md` and family packs
-6. Document changes in a changelog
+6. Document changes in a changelog, including the schema-sync `diff.js` output showing what changed vs. last year
 
-This is a manual process for v1. Automated ingestion is a non-goal.
+Schema generation is AI-assisted and human-reviewed, not fully manual and not fully automated — see §5's source policy. The Programme Guide knowledge pack (`derived/guide-youth-workers.md`, `derived/rules.md` — REQUIREMENTS.md FR-KB-1) is a separate artifact from the form/evaluation schemas and stays a manually curated pack for v1, per REQUIREMENTS.md §4's "out of scope" list.
 
 ---
 

@@ -32,7 +32,7 @@ describe('AGENTS', () => {
     expect(resolveAgentId(undefined)).toBe('grant');
     expect(persistAgentId('grant')).toBe('compliance');
     for (const agent of Object.values(AGENTS)) {
-      expect(agent.name).toBe('Erasmus AI');
+      expect(agent.name).toBe('EU Grantwriter');
       expect(agent.systemPrompt).toBe(GRANT_ASSISTANT_PROMPT);
       expect(agent.systemPrompt).toContain('Do NOT paste a blank application');
       expect(agent.systemPrompt).toContain('you may invent a PLAN');

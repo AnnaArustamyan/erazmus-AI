@@ -1,4 +1,4 @@
-# Erasmus AI Assistant
+# EU Grantwriter Assistant
 
 AI assistant for NGOs and youth organisations writing Erasmus+ grant applications.
 

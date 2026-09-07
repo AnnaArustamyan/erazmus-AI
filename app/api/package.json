@@ -1,13 +1,14 @@
 {
   "name": "@erasmus-ai/api",
   "version": "0.1.0",
-  "description": "Backend for Erasmus AI Assistant",
+  "description": "Backend for EU Grantwriter Assistant",
   "type": "module",
   "main": "src/server.js",
   "scripts": {
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
-    "test": "vitest run"
+    "test": "vitest run",
+    "set-plan": "node scripts/set-plan.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",

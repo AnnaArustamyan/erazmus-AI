@@ -1,6 +1,6 @@
-# Erasmus AI — Web (`app/web`)
+# EU Grantwriter — Web (`app/web`)
 
-React + Vite + Tailwind client for the Erasmus AI assistant.
+React + Vite + Tailwind client for the EU Grantwriter assistant.
 
 ## Run
 

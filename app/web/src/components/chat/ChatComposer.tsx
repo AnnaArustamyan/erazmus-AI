@@ -6,6 +6,7 @@ import {
 } from 'react'
 import { AlertTriangle, FileText, Loader2, Paperclip, Send, Square, X } from 'lucide-react'
 import type { PendingAttachment } from '../ErasmusChatWorkspace.types'
+import { TokenUpgradeBanner } from './TokenUpgradeBanner'
 
 interface ChatComposerProps {
   composerId: string
@@ -30,6 +31,14 @@ interface ChatComposerProps {
   onFileSelected: (event: ChangeEvent<HTMLInputElement>) => void
   onStop?: () => void
   hasDocument?: boolean
+  /** 0–100 percent of monthly quota used — drives the upgrade banner */
+  usagePercent?: number
+  /** Tokens remaining this month */
+  remainingTokens?: number
+  /** Monthly token limit */
+  tokenLimit?: number
+  /** Called when user clicks Upgrade in the banner */
+  onUpgrade?: () => void
 }
 
 export function ChatComposer({
@@ -55,11 +64,22 @@ export function ChatComposer({
   onFileSelected,
   onStop,
   hasDocument = false,
+  usagePercent = 0,
+  remainingTokens = 0,
+  tokenLimit = 20_000,
+  onUpgrade,
 }: ChatComposerProps) {
   const isComposerDisabled = isExhausted
 
   return (
     <div className="shrink-0 px-5 pb-6 pt-3">
+      {/* Upgrade banner — exhausted or near limit */}
+      <TokenUpgradeBanner
+        usagePercent={usagePercent}
+        remaining={remainingTokens}
+        limit={tokenLimit}
+        onUpgrade={onUpgrade}
+      />
       {errorMessage && (
         <p
           id={errorId}

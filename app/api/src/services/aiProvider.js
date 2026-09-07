@@ -58,6 +58,7 @@ export function isProviderConfiguredForPlan(plan) {
  *   temperature?: number,
  *   onDelta?: (chunk: string) => void,
  *   onUsage?: (usage: { total_tokens?: number }) => void,
+ *   reasoningEffort?: 'low' | 'high' | 'max',
  * }} params
  */
 export async function streamChatForPlan({
@@ -66,6 +67,7 @@ export async function streamChatForPlan({
   temperature,
   onDelta,
   onUsage,
+  reasoningEffort,
   signal,
 }) {
   const provider = resolveProviderForPlan(plan);
@@ -82,6 +84,8 @@ export async function streamChatForPlan({
     onDelta,
     onUsage,
     providerLabel: provider.label,
+    // Only Moonshot exposes this control; sending it to OpenAI/Luna is unsupported.
+    reasoningEffort: provider.id === 'moonshot' ? reasoningEffort : undefined,
     signal,
   });
 
@@ -92,7 +96,7 @@ export async function streamChatForPlan({
  * Non-streaming completion using the provider for the user's plan.
  * Free → Luna; paid → Moonshot. Same pass-rate prompts at the call site.
  */
-export async function completeChatForPlan({ plan, messages, temperature }) {
+export async function completeChatForPlan({ plan, messages, temperature, reasoningEffort }) {
   const provider = resolveProviderForPlan(plan);
   if (!isProviderConfiguredForPlan(plan)) {
     throw new Error(`${provider.label} is not configured for this plan`);
@@ -105,6 +109,7 @@ export async function completeChatForPlan({ plan, messages, temperature }) {
     messages,
     temperature,
     providerLabel: provider.label,
+    reasoningEffort: provider.id === 'moonshot' ? reasoningEffort : undefined,
   });
 
   return { ...result, provider };

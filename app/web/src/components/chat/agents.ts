@@ -5,7 +5,7 @@ export const DEFAULT_AGENT_ID = 'grant' as const
 export const DEFAULT_AGENTS: AIAgent[] = [
   {
     id: 'grant',
-    name: 'Erasmus AI',
+    name: 'EU Grantwriter',
     description: 'Helps you write an Erasmus+ application that can pass National Agency review.',
   },
 ]

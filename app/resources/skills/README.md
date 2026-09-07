@@ -1,6 +1,6 @@
 # Product skills
 
-These are **Claude-style skills for the Erasmus AI models**, not Cursor coding skills.
+These are **Claude-style skills for the EU Grantwriter models**, not Cursor coding skills.
 
 | Layer | Lives in | Job |
 |---|---|---|

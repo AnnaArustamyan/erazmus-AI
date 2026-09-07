@@ -20,23 +20,23 @@ export const GRANT_ASSISTANT_PROMPT = `${loadSkillBody('chat-coach')}${SAFETY_SU
  */
 export const AGENTS = {
   grant: {
-    name: 'Erasmus AI',
+    name: 'EU Grantwriter',
     systemPrompt: GRANT_ASSISTANT_PROMPT,
   },
   compliance: {
-    name: 'Erasmus AI',
+    name: 'EU Grantwriter',
     systemPrompt: GRANT_ASSISTANT_PROMPT,
   },
   budget: {
-    name: 'Erasmus AI',
+    name: 'EU Grantwriter',
     systemPrompt: GRANT_ASSISTANT_PROMPT,
   },
   'partner-search': {
-    name: 'Erasmus AI',
+    name: 'EU Grantwriter',
     systemPrompt: GRANT_ASSISTANT_PROMPT,
   },
   'report-writer': {
-    name: 'Erasmus AI',
+    name: 'EU Grantwriter',
     systemPrompt: GRANT_ASSISTANT_PROMPT,
   },
 };

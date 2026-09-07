@@ -64,6 +64,7 @@ router.post('/', verifyAuth, async (req, res) => {
   try {
     const result = await completeChatForPlan({
       plan: profile.plan,
+      reasoningEffort: 'high',
       messages: [
         {
           role: 'system',
@@ -107,6 +108,7 @@ router.post('/', verifyAuth, async (req, res) => {
       userId: req.user.id,
       title: extractTitleFromMarkdown(contentMd, 'Project plan'),
       contentMd,
+      plan: profile.plan,
     });
     const payload = await toGeneratedDocumentPayload(doc);
     return res.status(201).json({

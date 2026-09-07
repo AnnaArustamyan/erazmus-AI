@@ -26,7 +26,7 @@ export function BrandLockup({
   return (
     <span className="flex min-w-0 items-center gap-2.5">
       <BrandMark size={size} />
-      <span className={titleClassName}>Erasmus AI</span>
+      <span className={titleClassName}>EU Grantwriter</span>
     </span>
   )
 }

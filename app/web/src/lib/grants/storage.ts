@@ -1,7 +1,6 @@
-import type { GrantApplication, ProjectPlan } from './types'
+import type { GrantApplication } from './types'
 
 const GRANTS_KEY = 'erasmus.grantApplications'
-const PLANS_KEY = 'erasmus.projectPlans'
 
 function readJson<T>(key: string, fallback: T): T {
   try {
@@ -19,14 +18,6 @@ export function loadGrants(): GrantApplication[] {
 
 export function saveGrants(grants: GrantApplication[]): void {
   localStorage.setItem(GRANTS_KEY, JSON.stringify(grants))
-}
-
-export function loadPlans(): ProjectPlan[] {
-  return readJson(PLANS_KEY, [])
-}
-
-export function savePlans(plans: ProjectPlan[]): void {
-  localStorage.setItem(PLANS_KEY, JSON.stringify(plans))
 }
 
 export function createId(prefix: string): string {

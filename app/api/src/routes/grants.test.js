@@ -102,3 +102,50 @@ describe('PATCH /api/grants/:id', () => {
     expect(res.body.grant.status).toBe('in_review');
   });
 });
+
+describe('POST /api/grants/:id/validate', () => {
+  it('returns a nested readiness.gates object, not a top-level gates/readiness string', async () => {
+    // KA122 has no encoded form schema yet — validateApplication takes its early-exit path.
+    queueFromResults(supabaseAdminMock.from, [
+      { data: GRANT_ROW, error: null },
+      { data: { ...GRANT_ROW, readiness: { status: 'in_review' }, validation_report: {} }, error: null },
+    ]);
+    const res = await request(app)
+      .post(`/api/grants/${GRANT_ROW.id}/validate`)
+      .set('Authorization', 'Bearer t');
+    expect(res.status).toBe(200);
+    expect(res.body.report.readiness).toEqual(
+      expect.objectContaining({
+        status: expect.stringMatching(/^(not_ready|in_review)$/),
+        gates: expect.objectContaining({
+          schema: expect.any(String),
+          compliance: expect.any(String),
+          consistency: expect.any(String),
+          evidence: expect.any(String),
+          quality: expect.any(String),
+        }),
+      }),
+    );
+    // These must NOT exist at the top level — the frontend contract bug was reading these.
+    expect(res.body.report.gates).toBeUndefined();
+    expect(typeof res.body.report.readiness).toBe('object');
+  });
+
+  it('emits findings with a `location` key (not `field`) for a KA153 grant with empty answers', async () => {
+    const ka153Row = { ...GRANT_ROW, action_code: 'KA153', answers: {} };
+    queueFromResults(supabaseAdminMock.from, [
+      { data: ka153Row, error: null },
+      { data: { ...ka153Row, readiness: { status: 'not_ready' }, validation_report: {} }, error: null },
+    ]);
+    const res = await request(app)
+      .post(`/api/grants/${GRANT_ROW.id}/validate`)
+      .set('Authorization', 'Bearer t');
+    expect(res.status).toBe(200);
+    expect(res.body.report.findings.length).toBeGreaterThan(0);
+    const finding = res.body.report.findings[0];
+    expect(finding.location).toEqual(expect.any(String));
+    expect(finding.field).toBeUndefined();
+    expect(res.body.report.readiness.status).toBe('not_ready');
+    expect(res.body.report.readiness.gates.schema).toBe('fail');
+  });
+});

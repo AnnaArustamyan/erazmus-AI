@@ -22,13 +22,13 @@ describe('pass-rate knowledge pack', () => {
 
   it('does not tell chat to output a blank application skeleton', () => {
     const prompt = buildPassRateSystemPrompt({
-      agentSystemPrompt: 'You are Erasmus AI, a coach.',
+      agentSystemPrompt: 'You are EU Grantwriter, a coach.',
       queryText: 'hi how to get started',
       latestUserMessage: 'hi how to get started',
       mode: 'chat',
     });
 
-    expect(prompt).toContain('You are Erasmus AI, a coach.');
+    expect(prompt).toContain('You are EU Grantwriter, a coach.');
     expect(prompt).toContain('never dump a blank');
     expect(prompt).toContain('working scenario');
     expect(prompt).not.toContain('Start with a single H1 title line');
@@ -38,7 +38,7 @@ describe('pass-rate knowledge pack', () => {
 
   it('injects Guide excerpts and failure modes when drafting a youth-worker section in chat', () => {
     const prompt = buildPassRateSystemPrompt({
-      agentSystemPrompt: 'You are Erasmus AI, a coach.',
+      agentSystemPrompt: 'You are EU Grantwriter, a coach.',
       queryText: 'needs analysis for youth workers and APV timetable',
       latestUserMessage: 'Write the needs analysis and say what the APV timetable must include.',
       mode: 'chat',
@@ -54,7 +54,7 @@ describe('pass-rate knowledge pack', () => {
 
   it('tells KA121 chat to propose a working scenario rather than interview', () => {
     const prompt = buildPassRateSystemPrompt({
-      agentSystemPrompt: 'You are Erasmus AI, a coach.',
+      agentSystemPrompt: 'You are EU Grantwriter, a coach.',
       queryText: 'KA121 school learner 2 months I have no plan',
       latestUserMessage: 'I have no plan',
       mode: 'chat',

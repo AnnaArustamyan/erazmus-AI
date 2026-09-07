@@ -77,6 +77,7 @@ router.post('/', verifyAuth, async (req, res) => {
       conversationId: conversationId || null,
       title: typeof title === 'string' ? title : undefined,
       contentMd: contentMd.trim(),
+      plan: profile.plan,
     });
     return res.status(201).json({
       id: doc.id,
@@ -191,6 +192,7 @@ router.post('/from-conversation', verifyAuth, async (req, res) => {
   try {
     const result = await completeChatForPlan({
       plan: profile.plan,
+      reasoningEffort: 'high',
       messages: [
         {
           role: 'system',
@@ -236,6 +238,7 @@ router.post('/from-conversation', verifyAuth, async (req, res) => {
       conversationId: conversation.id,
       title: typeof title === 'string' && title.trim() ? title.trim() : undefined,
       contentMd,
+      plan: profile.plan,
     });
 
     const payload = await toGeneratedDocumentPayload(doc);
@@ -315,6 +318,7 @@ router.post('/from-interview', verifyAuth, async (req, res) => {
   try {
     const result = await completeChatForPlan({
       plan: profile.plan,
+      reasoningEffort: 'high',
       messages: [
         {
           role: 'system',
@@ -361,6 +365,7 @@ router.post('/from-interview', verifyAuth, async (req, res) => {
       userId: req.user.id,
       title: resolvedTitle,
       contentMd,
+      plan: profile.plan,
     });
     const payload = await toGeneratedDocumentPayload(doc);
     return res.status(201).json({

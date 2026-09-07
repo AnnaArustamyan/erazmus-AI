@@ -39,7 +39,7 @@ import { PreferencesPage } from './pages/settings/PreferencesPage'
 import { UsagePage } from './pages/settings/UsagePage'
 import { SecurityPage } from './pages/settings/SecurityPage'
 import { DocumentsPage } from './pages/settings/DocumentsPage'
-import { GeneratorPage } from './pages/GeneratorPage'
+import { EvaluatePage } from './pages/EvaluatePage'
 import { ApplicationPage } from './pages/ApplicationPage'
 import { GrantsLibraryPage } from './pages/GrantsLibraryPage'
 import { GrantsBuilderPage } from './pages/GrantsBuilderPage'
@@ -64,6 +64,12 @@ function AppHeader({
   const { user, profile, logout } = useAuth()
   const navigate = useNavigate()
 
+  const tokensUsed = profile?.tokensUsed ?? 0
+  const tokenLimit = profile?.monthlyTokenLimit ?? 20_000
+  const usagePercent = tokenLimit > 0 ? Math.min(100, Math.round((tokensUsed / tokenLimit) * 100)) : 0
+  const isLow = usagePercent >= 80
+  const isExhausted = tokensUsed >= tokenLimit
+
   return (
     <div className="flex shrink-0 items-center justify-between gap-3 border-b border-app-border/80 bg-app-panel/90 px-3 py-2 backdrop-blur-[2px] sm:px-4">
       <button
@@ -72,7 +78,7 @@ function AppHeader({
         className="min-w-0 text-left hover:opacity-90 focus-visible:outline-2 focus-visible:outline-app-accent focus-visible:outline-offset-2"
       >
         <span className="sm:hidden">
-          <BrandMark size={26} alt="Erasmus AI" />
+          <BrandMark size={26} alt="EU Grantwriter" />
         </span>
         <span className="hidden sm:block">
           <BrandLockup
@@ -82,12 +88,33 @@ function AppHeader({
         </span>
       </button>
       <ApplicationSwitcher />
+
+      {/* Compact token indicator — only visible when ≤20% remaining */}
+      {isLow && (
+        <button
+          type="button"
+          onClick={() => navigate('/settings/usage')}
+          aria-label={isExhausted ? 'Token quota exhausted — upgrade' : `${100 - usagePercent}% tokens remaining — upgrade`}
+          className={`hidden items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium sm:flex ${
+            isExhausted
+              ? 'animate-pulse border-app-danger/40 bg-app-danger/10 text-app-danger'
+              : 'border-app-warn/30 bg-app-warn-soft text-app-warn'
+          }`}
+        >
+          <span
+            className={`h-1.5 w-1.5 rounded-full ${isExhausted ? 'bg-app-danger' : 'bg-app-warn'}`}
+            aria-hidden="true"
+          />
+          {isExhausted ? 'Tokens exhausted' : `${100 - usagePercent}% left`}
+        </button>
+      )}
+
       <ProfileMenu
         name={profile?.name ?? null}
         email={profile?.email ?? user?.email ?? ''}
         plan={profile?.plan ?? 'free'}
-        tokensUsed={profile?.tokensUsed ?? 0}
-        tokenLimit={profile?.monthlyTokenLimit ?? 20_000}
+        tokensUsed={tokensUsed}
+        tokenLimit={tokenLimit}
         aiTier={profile?.features?.aiTier ?? 'standard'}
         onSignOut={() => void logout()}
       />
@@ -434,7 +461,7 @@ function AuthenticatedApp({
             />
           }
         />
-        <Route path="/generator" element={<GeneratorPage />} />
+        <Route path="/evaluate" element={<EvaluatePage />} />
         <Route path="/application" element={<ApplicationPage />} />
         <Route path="/grants" element={<GrantsLibraryPage />} />
         <Route path="/grants/builder" element={<GrantsBuilderPage />} />

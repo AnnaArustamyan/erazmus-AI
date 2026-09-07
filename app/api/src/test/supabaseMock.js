@@ -9,6 +9,7 @@ const CHAIN_METHODS = [
   'lt',
   'lte',
   'in',
+  'or',
   'order',
   'limit',
   'single',

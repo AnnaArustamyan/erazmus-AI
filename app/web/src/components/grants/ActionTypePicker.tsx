@@ -1,5 +1,6 @@
 import { ACTION_TYPES } from '../../lib/grants/actionTypes'
 import type { ActionGroup } from '../../lib/grants/types'
+import { CardButton } from '../ui/Card'
 
 const GROUP_LABEL: Record<ActionGroup, string> = {
   KA1: 'KA1 — Mobility',
@@ -24,12 +25,11 @@ export function ActionTypePicker({ onSelect }: { onSelect: (code: string) => voi
           </p>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {ACTION_TYPES.filter((action) => action.group === group).map((action) => (
-              <button
+              <CardButton
                 key={action.code}
-                type="button"
                 disabled={!action.supported}
                 onClick={() => onSelect(action.code)}
-                className="flex flex-col gap-2 rounded-xl border border-app-border bg-app-surface p-4 text-left hover:bg-app-panel-2 focus-visible:outline-2 focus-visible:outline-app-accent focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex flex-col gap-2"
               >
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-xs font-semibold text-app-accent">{action.code}</span>
@@ -40,7 +40,7 @@ export function ActionTypePicker({ onSelect }: { onSelect: (code: string) => voi
                 <p className="text-sm font-medium text-app-text">{action.name}</p>
                 <p className="text-xs text-app-text-dim">{action.description}</p>
                 <p className="text-xs text-app-text-dim">For: {action.audience}</p>
-              </button>
+              </CardButton>
             ))}
           </div>
         </div>

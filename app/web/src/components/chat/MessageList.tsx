@@ -35,7 +35,7 @@ export function MessageBubble({
       <div className={`mx-auto max-w-2xl ${isUser ? 'flex justify-end' : ''}`}>
         {!isUser && (
           <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-app-text-dim">
-            Erasmus AI
+            EU Grantwriter
           </div>
         )}
 
@@ -65,7 +65,7 @@ export function MessageBubble({
           <div
             className={
               isUser
-                ? 'max-w-[92%] rounded-2xl border border-app-border bg-app-bubble-user px-4 py-3 text-[0.95rem] leading-relaxed text-app-bubble-user-text'
+                ? 'max-w-[92%] rounded-2xl border border-app-border bg-app-bubble-user px-4 py-3 text-[0.95rem] leading-relaxed text-app-bubble-user-text shadow-app-sm transition-shadow duration-150'
                 : 'text-app-text'
             }
           >
@@ -81,7 +81,7 @@ export function MessageBubble({
           <button
             type="button"
             onClick={() => onRetry(message)}
-            className="mt-2 inline-flex items-center gap-1.5 border border-app-border px-2.5 py-1 text-xs font-medium text-app-danger hover:bg-app-panel focus-visible:outline-2 focus-visible:outline-app-accent focus-visible:outline-offset-2"
+            className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-app-border px-2.5 py-1 text-xs font-medium text-app-danger transition-colors duration-150 hover:bg-app-panel focus-visible:outline-2 focus-visible:outline-app-accent focus-visible:outline-offset-2"
           >
             <RefreshCw size={12} aria-hidden="true" />
             Retry
@@ -190,7 +190,7 @@ export function MessageList({
       )}
       {isSending && messages[messages.length - 1]?.text === '' && (
         <p className="py-3 text-xs text-app-text-dim" role="status">
-          {activeAgentName ?? 'Erasmus AI'} is writing…
+          {activeAgentName ?? 'EU Grantwriter'} is writing…
         </p>
       )}
     </div>

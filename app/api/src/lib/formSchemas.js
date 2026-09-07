@@ -3,37 +3,47 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const SCHEMAS_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../resources/schemas');
-
-const FORM_FILES = {
-  KA153: 'ka153-you-2026/form.json',
-};
-
-const EVAL_FILES = {
-  KA153: 'ka153-you-2026/evaluation.json',
-};
+const MANIFEST_PATH = path.join(SCHEMAS_DIR, 'manifest.json');
 
 const cache = new Map();
 
-function readJson(rel) {
-  const abs = path.join(SCHEMAS_DIR, rel);
+function readJson(abs) {
   if (cache.has(abs)) return cache.get(abs);
   const data = JSON.parse(fs.readFileSync(abs, 'utf8'));
   cache.set(abs, data);
   return data;
 }
 
+/**
+ * Single source of truth for which actions have a reviewed schema and where
+ * it lives. Adding or enabling an action is a manifest edit, not a code
+ * change — see tools/schema-sync/src/sync.js, which writes this file after
+ * the human review checklist passes.
+ * @param {string} actionCode
+ * @returns {{ callYear: number, supported: boolean, dir: string, verifiedAt?: string } | null}
+ */
+export function manifestEntry(actionCode) {
+  const manifest = readJson(MANIFEST_PATH);
+  const entry = manifest[actionCode];
+  return entry && entry.supported ? entry : null;
+}
+
+export function isActionSupported(actionCode) {
+  return manifestEntry(actionCode) !== null;
+}
+
 export function loadFormSchema(actionCode, callYear = 2026) {
-  const rel = FORM_FILES[actionCode];
-  if (!rel) return null;
-  const schema = readJson(rel);
+  const entry = manifestEntry(actionCode);
+  if (!entry) return null;
+  const schema = readJson(path.join(SCHEMAS_DIR, entry.dir, 'form.json'));
   if (schema.callYear !== callYear) return schema;
   return schema;
 }
 
 export function loadEvaluationSchema(actionCode, callYear = 2026) {
-  const rel = EVAL_FILES[actionCode];
-  if (!rel) return null;
-  const schema = readJson(rel);
+  const entry = manifestEntry(actionCode);
+  if (!entry) return null;
+  const schema = readJson(path.join(SCHEMAS_DIR, entry.dir, 'evaluation.json'));
   if (schema.callYear !== callYear) return schema;
   return schema;
 }

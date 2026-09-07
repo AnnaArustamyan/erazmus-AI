@@ -2,13 +2,24 @@ import { Document, HeadingLevel, Packer, Paragraph, TextRun } from 'docx';
 import { supabaseAdmin } from '../config/supabase.js';
 import { extractTitleFromMarkdown } from '../lib/applicationSchema.js';
 import { buildPdfBuffer } from '../lib/markdownPdf.js';
+import { getPlanConfig } from '../lib/plans.js';
 
 const DOCUMENTS_BUCKET = 'documents';
 const DOCX_TYPE =
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 const DOCUMENT_COLUMNS_CORE =
   'id, user_id, conversation_id, title, content_md, md_storage_path, docx_storage_path, created_at';
-const DOCUMENT_COLUMNS = `${DOCUMENT_COLUMNS_CORE}, pdf_storage_path`;
+const DOCUMENT_COLUMNS = `${DOCUMENT_COLUMNS_CORE}, pdf_storage_path, expires_at`;
+
+/**
+ * @param {string | null | undefined} plan
+ * @returns {string | null} ISO timestamp, or null for unlimited retention
+ */
+export function expiryForPlan(plan) {
+  const days = getPlanConfig(plan).documentRetentionDays;
+  if (!days) return null;
+  return new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
+}
 
 function isMissingPdfColumn(error) {
   return /pdf_storage_path/i.test(error?.message ?? '');
@@ -195,6 +206,7 @@ async function insertDocumentRow(row) {
  *   conversationId?: string | null,
  *   title?: string,
  *   contentMd: string,
+ *   plan?: string | null,
  * }} input
  */
 export async function createDocumentRecord({
@@ -202,6 +214,7 @@ export async function createDocumentRecord({
   conversationId = null,
   title,
   contentMd,
+  plan = null,
 }) {
   const resolvedTitle = title || extractTitleFromMarkdown(contentMd);
   const docId = crypto.randomUUID();
@@ -221,6 +234,7 @@ export async function createDocumentRecord({
     md_storage_path: mdPath,
     docx_storage_path: docxPath,
     pdf_storage_path: pdfPath,
+    expires_at: expiryForPlan(plan),
   });
 
   if (error || !data) {
@@ -361,8 +375,9 @@ export async function ensurePdfUploaded(doc) {
 export async function listDocumentsForUser(userId) {
   const { data, error } = await supabaseAdmin
     .from('documents')
-    .select('id, title, conversation_id, created_at')
+    .select('id, title, conversation_id, created_at, expires_at')
     .eq('user_id', userId)
+    .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
     .order('created_at', { ascending: false });
 
   if (error) throw new Error(error.message);
@@ -384,6 +399,7 @@ export async function getDocumentForUser(userId, documentId) {
   );
 
   if (error || !data) return null;
+  if (data.expires_at && new Date(data.expires_at).getTime() <= Date.now()) return null;
   return data;
 }
 

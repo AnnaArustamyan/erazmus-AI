@@ -25,7 +25,9 @@ docs/     — deploy / product notes
 - No Vercel/Railway/Upstash split
 - No Redis/worker until heavy background jobs
 - API remains JavaScript (TypeScript in `app/web` only)
-- Stripe and full grant wizard UI are next, not blocking deploy
+- Billing and full grant wizard UI are next, not blocking deploy. **Not Stripe** — Armenia-based
+  accounts aren't Stripe-eligible; Ameriabank is the current candidate, unconfirmed
+  (PRODUCT-SPEC.md OQ-8). Plan changes are manual for now (`app/api/scripts/set-plan.js`).
 
 ## Legacy Next.js
 

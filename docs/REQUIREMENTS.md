@@ -1,4 +1,4 @@
-# Erasmus AI — Development Requirements Document
+# EU Grantwriter — Development Requirements Document
 
 **Version:** 1.2  
 **Date:** 2026-08-17  
@@ -105,7 +105,11 @@ Gaps this document closes: docs on Free, settings area, chat message actions, du
 
 ### Out of scope for this sprint
 
-- Live Stripe billing (manual plan change in DB is OK for launch)
+- Live billing integration (manual plan change in DB is OK for launch — see `app/api/scripts/set-plan.js`).
+  **Not Stripe**: Stripe does not support Armenia-based accounts, so it's not a legally viable
+  destination for this product regardless of build order. Ameriabank is the likely replacement
+  but is unconfirmed — needs research into their merchant/payment-gateway API before any
+  integration work starts. Tracked as PRODUCT-SPEC.md OQ-1.
 - Mobile native apps
 - AWS migration
 - Rewriting away from Supabase

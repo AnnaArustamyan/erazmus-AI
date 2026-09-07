@@ -1,11 +1,12 @@
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
-import { ClipboardCheck, FileStack, MessageSquare, Plus } from 'lucide-react'
+import { ClipboardCheck, FileStack, MessageSquare, Plus, ShieldCheck } from 'lucide-react'
 import { BrandMark } from '../BrandMark'
 import { useGrantInterview } from '../../grants/GrantInterviewContext'
 
 const NAV = [
   { to: '/chat', label: 'Chat', icon: MessageSquare },
-  { to: '/grants/builder', label: 'Requirements', icon: ClipboardCheck },
+  { to: '/grants/builder', label: 'Application Form', icon: ClipboardCheck },
+  { to: '/evaluate', label: 'Evaluate', icon: ShieldCheck },
   { to: '/application', label: 'My Application', icon: FileStack },
 ]
 
@@ -34,8 +35,8 @@ export function IconRail() {
     >
       <NavLink
         to="/chat"
-        aria-label="Erasmus AI"
-        title="Erasmus AI"
+        aria-label="EU Grantwriter"
+        title="EU Grantwriter"
         className="mb-1 flex h-10 w-10 items-center justify-center rounded-xl hover:bg-app-panel-2 focus-visible:outline-2 focus-visible:outline-app-accent focus-visible:outline-offset-2"
       >
         <BrandMark size={28} />

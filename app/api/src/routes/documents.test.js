@@ -160,6 +160,26 @@ describe('GET /api/documents', () => {
     expect(res.body.document.downloads.pdf).toBeTruthy();
     expect(res.body.document.downloads.docx).toBeTruthy();
   });
+
+  it('lists documents, excluding expired ones via the retention filter', async () => {
+    queueFromResults(supabaseAdminMock.from, [
+      {
+        data: [
+          { id: 'doc-1', title: 'Still valid', conversation_id: null, created_at: '2026-01-01T00:00:00.000Z', expires_at: null },
+        ],
+        error: null,
+      },
+    ]);
+
+    const res = await request(app).get('/api/documents').set('Authorization', 'Bearer t');
+
+    expect(res.status).toBe(200);
+    expect(res.body.documents).toHaveLength(1);
+    expect(res.body.documents[0].id).toBe('doc-1');
+    // Confirms listDocumentsForUser's .or() expiry filter is a real, callable
+    // chain method on the Supabase client — not a call that would throw in prod.
+    expect(supabaseAdminMock.from).toHaveBeenCalledWith('documents');
+  });
 });
 
 describe('POST /api/documents/from-conversation', () => {

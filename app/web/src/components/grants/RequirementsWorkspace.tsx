@@ -1,4 +1,4 @@
-import { needsAttention, type RequirementItem, type RequirementStatus } from '../../lib/grants/gaps'
+import type { RequirementItem, RequirementStatus } from '../../lib/grants/gaps'
 import type { WorkingScenario } from '../../lib/grants/proposals'
 
 const STATUS_LABEL: Record<RequirementStatus, string> = {
@@ -28,7 +28,6 @@ export function RequirementsWorkspace({
   onConfirmProposal,
   onUseWorkingScenario,
 }: RequirementsWorkspaceProps) {
-  const open = needsAttention(items)
   const required = items.filter((item) => item.required)
   const done = required.filter((item) => item.status === 'complete').length
   const sections = [...new Set(items.map((item) => item.section || 'Requirements'))]
@@ -40,14 +39,18 @@ export function RequirementsWorkspace({
       <p className="text-[11px] font-semibold uppercase tracking-wide text-app-text-dim">
         {actionCode} · {callYear ?? 2026}
       </p>
-      <h1 className="mt-1 font-display text-xl font-semibold text-app-text">Requirements</h1>
+      <h1 className="mt-1 font-display text-xl font-semibold text-app-text">Application Form</h1>
       <p className="mt-1.5 text-sm text-app-text-dim">
-        {done} of {required.length} required fields complete. Open any field — this is not a questionnaire sequence.
+        {done} of {required.length} required fields complete. Fields below are grouped to match the official
+        application form — open any one, in any order. "Missing" just means not answered yet, not wrong.
         Suggestions are a plan until you confirm them.
       </p>
 
       {showScenario && scenario ? (
-        <section className="mt-6 rounded-xl border border-app-border bg-app-surface px-4 py-4" aria-labelledby="working-scenario-heading">
+        <section
+          className="mt-6 rounded-xl border border-app-border bg-app-surface px-4 py-4 shadow-app-sm transition-all duration-150"
+          aria-labelledby="working-scenario-heading"
+        >
           <h2 id="working-scenario-heading" className="text-sm font-semibold text-app-text">
             Proposed project setup
           </h2>
@@ -60,7 +63,10 @@ export function RequirementsWorkspace({
             {scenario.items
               .filter((row) => row.fillState !== 'known')
               .map((row) => (
-                <li key={row.factKey} className="rounded-lg border border-app-border px-3 py-2">
+                <li
+                  key={row.factKey}
+                  className="rounded-lg border border-app-border bg-app-panel/40 px-3 py-2 transition-colors duration-150"
+                >
                   <p className="text-sm text-app-text">
                     {row.value == null || row.value === '' ? row.label : `${row.label}: ${row.value}`}
                   </p>
@@ -72,7 +78,7 @@ export function RequirementsWorkspace({
             <button
               type="button"
               onClick={onUseWorkingScenario}
-              className="mt-3 rounded-lg border border-app-accent bg-app-accent px-3 py-2 text-sm font-medium text-app-surface"
+              className="mt-3 rounded-lg border border-app-accent bg-app-accent px-3 py-2 text-sm font-medium text-app-surface shadow-app-sm transition-all duration-150 hover:-translate-y-0.5 hover:shadow-app-md"
             >
               Use this working scenario
             </button>
@@ -80,26 +86,8 @@ export function RequirementsWorkspace({
         </section>
       ) : null}
 
-      {open.length > 0 && (
-        <section className="mt-6" aria-labelledby="needs-attention-heading">
-          <h2 id="needs-attention-heading" className="mb-2 text-sm font-semibold text-app-text">
-            Needs attention
-          </h2>
-          <ul className="flex flex-col overflow-hidden rounded-xl border border-app-border bg-app-surface">
-            {open.map((item) => (
-              <RequirementRow
-                key={item.fieldId}
-                item={item}
-                onOpen={onOpen}
-                onConfirmProposal={onConfirmProposal}
-              />
-            ))}
-          </ul>
-        </section>
-      )}
-
-      {open.length === 0 && (
-        <p className="mt-6 rounded-xl border border-app-border bg-app-surface px-4 py-3 text-sm text-app-text">
+      {required.length > 0 && done === required.length && (
+        <p className="mt-6 rounded-xl border border-app-border bg-app-surface px-4 py-3 text-sm text-app-text shadow-app-sm">
           Required fields are filled. Weak or Chat-inferred facts will show here if they appear later.
         </p>
       )}
@@ -109,7 +97,7 @@ export function RequirementsWorkspace({
         return (
           <section key={section} className="mt-6">
             <h2 className="mb-2 text-sm font-semibold text-app-text">{section}</h2>
-            <ul className="flex flex-col overflow-hidden rounded-xl border border-app-border bg-app-surface">
+            <ul className="flex flex-col overflow-hidden rounded-xl border border-app-border bg-app-surface shadow-app-sm transition-all duration-150">
               {rows.map((item) => (
                 <RequirementRow
                   key={item.fieldId}
@@ -148,7 +136,7 @@ function RequirementRow({
         <button
           type="button"
           onClick={() => onOpen(item.fieldId)}
-          className="min-w-0 flex-1 text-left hover:bg-app-panel-2 focus-visible:outline-2 focus-visible:outline-app-accent"
+          className="min-w-0 flex-1 text-left transition-colors duration-150 hover:bg-app-panel-2 focus-visible:outline-2 focus-visible:outline-app-accent"
         >
           <span className="block text-sm text-app-text">{item.label}</span>
           {item.issues[0] ? (
@@ -163,7 +151,7 @@ function RequirementRow({
             <button
               type="button"
               onClick={() => onConfirmProposal(item.fieldId, item.proposedValue!)}
-              className="text-[11px] font-medium text-app-accent underline"
+              className="text-[11px] font-medium text-app-accent underline decoration-app-accent/40 underline-offset-2 transition-colors duration-150 hover:decoration-app-accent"
             >
               Confirm
             </button>

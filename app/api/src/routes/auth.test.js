@@ -239,6 +239,8 @@ describe('GET /api/auth/me', () => {
       monthlyDocumentLimit: 3,
       canUseAdvancedAgents: true,
       monthlyTokenLimit: 20000,
+      priceUsd: null,
+      documentRetentionDays: 30,
     });
     expect(res.body.documents_used_this_month).toBe(0);
     expect(res.body.guide_year).toBe(2026);

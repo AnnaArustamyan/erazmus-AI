@@ -4,5 +4,5 @@ import { app } from './app.js';
 validateEnv();
 
 app.listen(env.port, () => {
-  console.log(`Erasmus AI backend running on http://localhost:${env.port}`);
+  console.log(`EU Grantwriter backend running on http://localhost:${env.port}`);
 });

@@ -13,12 +13,24 @@
   --color-bubble-user: #e8edf2;
   --color-bubble-user-text: #18202b;
   --color-danger: #9b3d2e;
+  --color-danger-soft: #f3ded9;
+  --color-good: #1f6e4f;
+  --color-good-soft: #dcefe4;
+  --color-warn: #92600f;
+  --color-warn-soft: #f3e3c6;
   --color-surface: #faf9f6;
   --font-sans: 'Source Sans 3', 'Segoe UI', sans-serif;
   --font-display: 'Source Serif 4', Georgia, serif;
   --workspace-glow: radial-gradient(1200px 520px at 70% -10%, rgba(31, 79, 122, 0.08), transparent 55%),
     radial-gradient(720px 380px at 8% 0%, rgba(227, 93, 58, 0.06), transparent 48%),
     radial-gradient(900px 420px at 0% 100%, rgba(24, 32, 43, 0.04), transparent 50%);
+  /* Faint paper grain, alpha baked into the SVG filter (0.05) — a background layer, so it can
+     never paint over content regardless of stacking context. */
+  --workspace-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.05 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  /* Elevation: light theme reads depth from a soft navy-tinted shadow. */
+  --shadow-sm: 0 1px 2px rgba(24, 32, 43, 0.06), 0 1px 1px rgba(24, 32, 43, 0.04);
+  --shadow-md: 0 4px 14px rgba(24, 32, 43, 0.08), 0 2px 4px rgba(24, 32, 43, 0.05);
+  --shadow-lg: 0 16px 36px rgba(24, 32, 43, 0.12), 0 4px 10px rgba(24, 32, 43, 0.06);
 }
 
 [data-theme="dark"] {
@@ -33,10 +45,22 @@
   --color-bubble-user: #232a36;
   --color-bubble-user-text: #e8eaee;
   --color-danger: #e07a68;
+  --color-danger-soft: #3a201c;
+  --color-good: #6fcf9f;
+  --color-good-soft: #163227;
+  --color-warn: #e0b15b;
+  --color-warn-soft: #382a12;
   --color-surface: #151920;
   --workspace-glow: radial-gradient(1000px 480px at 75% -15%, rgba(143, 180, 214, 0.08), transparent 55%),
     radial-gradient(640px 320px at 6% 0%, rgba(227, 93, 58, 0.08), transparent 46%),
     radial-gradient(800px 400px at 10% 110%, rgba(143, 180, 214, 0.04), transparent 45%);
+  --workspace-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.08 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  /* Elevation: dark theme reads depth from a lighter top edge + soft black shadow, not a shadow on black. */
+  --shadow-sm: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 6px 18px rgba(0, 0, 0, 0.35),
+    0 0 0 1px rgba(143, 180, 214, 0.04);
+  --shadow-lg: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 20px 44px rgba(0, 0, 0, 0.45),
+    0 0 28px rgba(143, 180, 214, 0.06);
 }
 
 @theme inline {
@@ -51,9 +75,17 @@
   --color-app-bubble-user: var(--color-bubble-user);
   --color-app-bubble-user-text: var(--color-bubble-user-text);
   --color-app-danger: var(--color-danger);
+  --color-app-danger-soft: var(--color-danger-soft);
+  --color-app-good: var(--color-good);
+  --color-app-good-soft: var(--color-good-soft);
+  --color-app-warn: var(--color-warn);
+  --color-app-warn-soft: var(--color-warn-soft);
   --color-app-surface: var(--color-surface);
   --font-sans: var(--font-sans);
   --font-display: var(--font-display);
+  --shadow-app-sm: var(--shadow-sm);
+  --shadow-app-md: var(--shadow-md);
+  --shadow-app-lg: var(--shadow-lg);
 }
 
 html,
@@ -80,7 +112,9 @@ body {
 
 .workspace-shell {
   background-color: var(--color-bg);
-  background-image: var(--workspace-glow);
+  /* Grain layered first (painted on top, per CSS background-image stacking) so it reads over
+     the gradient glow but — being a background layer, not an element — can never cover children. */
+  background-image: var(--workspace-grain), var(--workspace-glow);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -189,12 +223,46 @@ body {
   color: var(--color-text-dim);
 }
 
+.chat-md table {
+  margin: 0.85em 0;
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.92em;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 0.5em;
+}
+
+.chat-md th,
+.chat-md td {
+  padding: 0.5em 0.75em;
+  text-align: left;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.chat-md tr:last-child td {
+  border-bottom: none;
+}
+
+.chat-md th {
+  font-family: var(--font-display);
+  font-weight: 600;
+  background: var(--color-panel);
+  color: var(--color-text);
+}
+
+.chat-md td {
+  color: var(--color-text-dim);
+}
+
 .doc-paper {
   max-width: 42rem;
   padding: 1.75rem 1.6rem 2.25rem;
   border: 1px solid var(--color-border);
-  background: var(--color-bg);
-  box-shadow: 0 1px 0 rgba(24, 32, 43, 0.04);
+  background: var(--color-surface);
+  border-radius: 0.75rem;
+  box-shadow: var(--shadow-md);
 }
 
 .doc-paper .chat-md {
@@ -205,4 +273,53 @@ body {
 .doc-paper .chat-md h1 {
   margin-top: 0;
   font-size: 1.45em;
+}
+
+/* Evaluate status stamp — a nod to "an application under review," not a generic status pill. */
+.stamp {
+  position: relative;
+  flex-shrink: 0;
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  border: 2.5px solid var(--color-warn);
+  color: var(--color-warn);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  transform: rotate(-8deg);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  line-height: 1.15;
+}
+
+.stamp::before {
+  content: '';
+  position: absolute;
+  inset: 5px;
+  border-radius: 50%;
+  border: 1px dashed var(--color-warn);
+  opacity: 0.55;
+}
+
+.stamp.bad {
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+}
+
+.stamp.bad::before {
+  border-color: var(--color-danger);
+}
+
+.stamp.ok {
+  border-color: var(--color-good);
+  color: var(--color-good);
+}
+
+.stamp.ok::before {
+  border-color: var(--color-good);
 }

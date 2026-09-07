@@ -1,5 +1,12 @@
 import { readUsageTotalTokens } from '../lib/tokenUsage.js';
 
+// Reasoning-oriented models (OpenAI's gpt-5.6-luna, Moonshot's kimi-k* family) reject a custom
+// temperature — "invalid temperature: only 1 is allowed for this model" — and only accept the
+// implicit default. Skip sending it for those rather than erroring on every request.
+function allowsCustomTemperature(model) {
+  return !/luna|kimi/i.test(String(model));
+}
+
 /**
  * @param {{
  *   baseUrl: string,
@@ -10,6 +17,7 @@ import { readUsageTotalTokens } from '../lib/tokenUsage.js';
  *   onDelta?: (chunk: string) => void,
  *   onUsage?: (usage: { total_tokens?: number }) => void,
  *   providerLabel?: string,
+ *   reasoningEffort?: 'low' | 'high' | 'max',
  * }} params
  */
 export async function streamOpenAiCompatibleChat({
@@ -21,6 +29,7 @@ export async function streamOpenAiCompatibleChat({
   onDelta,
   onUsage,
   providerLabel = 'AI provider',
+  reasoningEffort,
   signal,
 }) {
   if (!apiKey) {
@@ -33,9 +42,14 @@ export async function streamOpenAiCompatibleChat({
     stream: true,
     stream_options: { include_usage: true },
   };
-  // Some OpenAI models (e.g. gpt-5.6-luna) only allow the default temperature.
-  if (typeof temperature === 'number' && !String(model).toLowerCase().includes('luna')) {
+  if (typeof temperature === 'number' && allowsCustomTemperature(model)) {
     body.temperature = temperature;
+  }
+  // Moonshot-specific: caps chain-of-thought token spend. kimi-k3 defaults to
+  // "max" reasoning even for trivial replies — 'low' cuts reasoning tokens by
+  // ~6x with no quality loss for conversational chat (measured 2026-09-03).
+  if (reasoningEffort) {
+    body.reasoning_effort = reasoningEffort;
   }
 
   const response = await fetch(`${baseUrl.replace(/\/$/, '')}/chat/completions`, {
@@ -105,6 +119,7 @@ export async function streamOpenAiCompatibleChat({
  *   messages: {role: string, content: string}[],
  *   temperature?: number,
  *   providerLabel?: string,
+ *   reasoningEffort?: 'low' | 'high' | 'max',
  * }} params
  * @returns {Promise<{ content: string, totalTokens: number }>}
  */
@@ -115,6 +130,7 @@ export async function completeOpenAiCompatibleChat({
   messages,
   temperature = 0.2,
   providerLabel = 'AI provider',
+  reasoningEffort,
 }) {
   if (!apiKey) {
     throw new Error(`${providerLabel} API key is not configured`);
@@ -125,8 +141,11 @@ export async function completeOpenAiCompatibleChat({
     messages,
     stream: false,
   };
-  if (typeof temperature === 'number' && !String(model).toLowerCase().includes('luna')) {
+  if (typeof temperature === 'number' && allowsCustomTemperature(model)) {
     body.temperature = temperature;
+  }
+  if (reasoningEffort) {
+    body.reasoning_effort = reasoningEffort;
   }
 
   const response = await fetch(`${baseUrl.replace(/\/$/, '')}/chat/completions`, {

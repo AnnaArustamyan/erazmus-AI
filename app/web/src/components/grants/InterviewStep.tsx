@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { ArrowLeft } from 'lucide-react'
 import { assessAnswer } from '../../lib/grants/schemas/formSchemaToGraph'
 import type { InterviewQuestion } from '../../lib/grants/types'
+import { Select } from '../ui/Select'
 
 interface InterviewStepProps {
   question: InterviewQuestion
@@ -30,7 +31,7 @@ export function InterviewStep({
   }
 
   return (
-    <div className="mx-auto flex h-full max-w-2xl flex-col justify-center px-2 py-10">
+    <div className="mx-auto flex h-full max-w-2xl flex-col px-2 pb-10 pt-16">
       <div
         role="progressbar"
         aria-label="Application completeness"
@@ -89,21 +90,13 @@ export function InterviewStep({
       )}
 
       {question.type === 'select' && (
-        <select
+        <Select
           autoFocus
           value={value}
-          onChange={(e) => setValue(e.target.value)}
-          className="w-full border border-app-border bg-app-surface px-3 py-2 text-sm text-app-text focus-visible:outline-2 focus-visible:outline-app-accent"
-        >
-          <option value="" disabled>
-            Choose an option…
-          </option>
-          {question.options?.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
+          onValueChange={setValue}
+          options={question.options ?? []}
+          className="w-full"
+        />
       )}
 
       {(() => {

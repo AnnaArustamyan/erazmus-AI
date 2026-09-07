@@ -23,7 +23,7 @@ export function buildPdfBuffer(markdown) {
       bufferPages: true,
       info: {
         Title: extractTitle(markdown),
-        Author: 'Erasmus AI',
+        Author: 'EU Grantwriter',
       },
     });
     const chunks = [];
